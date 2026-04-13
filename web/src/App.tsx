@@ -36,10 +36,9 @@ function App() {
     <>
       <section id="center">
         <div>
-          <h1>Vercel Deployment Test</h1>
+          <h1>Exponent</h1>
           <p>
-            If you can see this page and the <code>/api/health</code> response
-            below, your Vercel deployment is working.
+            Guess the closest number to the target.
           </p>
           <ul style={{ textAlign: 'left', margin: '16px auto', maxWidth: 720 }}>
             <li>
