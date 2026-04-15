@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [count, setCount] = useState<number | null>(null)
+  const [counterError, setCounterError] = useState<string | null>(null)
+  const [counterBusy, setCounterBusy] = useState(false)
   const [health, setHealth] = useState<unknown>(null)
   const [healthError, setHealthError] = useState<string | null>(null)
 
@@ -10,6 +12,21 @@ function App() {
 
   useEffect(() => {
     let cancelled = false
+
+    async function loadCounter() {
+      try {
+        const res = await fetch('/api/counter', {
+          headers: { Accept: 'application/json' },
+        })
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const json = (await res.json()) as { value: number }
+        if (cancelled) return
+        setCount(json.value)
+      } catch (err) {
+        if (cancelled) return
+        setCounterError(err instanceof Error ? err.message : 'Unknown error')
+      }
+    }
 
     async function run() {
       try {
@@ -26,11 +43,30 @@ function App() {
       }
     }
 
+    loadCounter()
     run()
     return () => {
       cancelled = true
     }
   }, [])
+
+  async function incrementSharedCounter() {
+    setCounterError(null)
+    setCounterBusy(true)
+    try {
+      const res = await fetch('/api/counter-increment', {
+        method: 'POST',
+        headers: { Accept: 'application/json' },
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const json = (await res.json()) as { value: number }
+      setCount(json.value)
+    } catch (err) {
+      setCounterError(err instanceof Error ? err.message : 'Unknown error')
+    } finally {
+      setCounterBusy(false)
+    }
+  }
 
   return (
     <>
@@ -52,11 +88,25 @@ function App() {
 
         <button
           className="counter"
-          onClick={() => setCount((c) => c + 1)}
-          aria-label="Increment counter"
+          onClick={incrementSharedCounter}
+          aria-label="Increment shared counter"
+          disabled={counterBusy}
         >
-          Count is {count}
+          {counterBusy ? 'Updating…' : `Shared count is ${count ?? '…'}`}
         </button>
+
+        <div style={{ width: '100%', maxWidth: 720, textAlign: 'left' }}>
+          <h2 style={{ marginTop: 28, marginBottom: 12 }}>Supabase counter</h2>
+          {counterError ? (
+            <p style={{ color: '#ff6b6b' }}>
+              Failed to use Supabase counter: <code>{counterError}</code>
+            </p>
+          ) : (
+            <p style={{ color: 'var(--text)' }}>
+              This value is stored in Supabase and shared across all users.
+            </p>
+          )}
+        </div>
 
         <div style={{ width: '100%', maxWidth: 720, textAlign: 'left' }}>
           <h2 style={{ marginTop: 28, marginBottom: 12 }}>
