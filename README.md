@@ -72,7 +72,33 @@ VITE_SUPABASE_ANON_KEY="YOUR_SUPABASE_ANON_KEY"
 You can find these in Supabase Dashboard → Project Settings → API.
 **Do not expose the service role key in the browser.** This project uses it only in serverless API routes under `web/api/`.
 
-### 5) Enable Realtime + read access for clients (for live updates)
+### 5) Google sign-in (required to open the app)
+
+The main UI is behind **Supabase Auth** with the **Google** provider. The browser client uses `persistSession` and `detectSessionInUrl` so the OAuth redirect back to your app restores the session.
+
+#### Google Cloud Console
+
+1. Open [Google Cloud Console](https://console.cloud.google.com/) → **APIs & Services** → **Credentials** → **Create credentials** → **OAuth client ID**.
+2. Application type: **Web application**.
+3. **Authorized JavaScript origins**: add your app origins, e.g. `http://localhost:5173` and `https://your-deployment.vercel.app`.
+4. **Authorized redirect URIs**: add Supabase’s callback (not your app URL):
+
+   `https://<your-project-ref>.supabase.co/auth/v1/callback`
+
+   Use your real project ref from Supabase **Project Settings → General → Project ID** (the URL is `https://<project-ref>.supabase.co`).
+
+5. Copy the **Client ID** and **Client secret**.
+
+#### Supabase Dashboard
+
+1. **Authentication → Providers → Google**: enable, paste **Client ID** and **Client Secret** from Google.
+2. **Authentication → URL configuration**:
+   - **Site URL**: your production app URL, e.g. `https://your-deployment.vercel.app`
+   - **Redirect URLs**: add `http://localhost:5173`, your production URL, and any Vercel preview URLs you use.
+
+Redeploy after changing environment variables.
+
+### 6) Enable Realtime + read access for clients (for live updates)
 
 To update all devices instantly, the browser subscribes to changes on `global_counter` using the **anon** key.
 
@@ -113,6 +139,6 @@ Then redeploy.
 
 After deploy, visit your site and confirm:
 
-- The page shows “Vercel Deployment Test”
+- You are prompted to **Sign in with Google**, then you reach the main page
 - The page successfully fetches `GET /api/health` and prints JSON
 - The page shows a “Shared count” that increments and persists across refreshes/devices
