@@ -1,0 +1,73 @@
+.game-layout {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 20px 48px;
+  text-align: left;
+}
+
+.game-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  background: var(--social-bg);
+  margin-bottom: 16px;
+}
+
+.game-code {
+  font-family: var(--mono);
+  font-size: 28px;
+  letter-spacing: 0.2em;
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.game-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.game-row:last-child {
+  border-bottom: none;
+}
+
+.btn-ghost {
+  font-family: var(--sans);
+  font-size: 14px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-h);
+  cursor: pointer;
+}
+
+.btn-ghost:hover {
+  border-color: var(--accent-border);
+}
+
+.btn-danger {
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.4);
+}
+
+.game-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  font: inherit;
+  background: var(--bg);
+  color: var(--text-h);
+}
+
+.game-timer {
+  font-family: var(--mono);
+  font-size: 20px;
+  color: var(--accent);
+}

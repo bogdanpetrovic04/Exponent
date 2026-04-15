@@ -1,6 +1,6 @@
 # Exponent
 
-Sample React web app for testing Vercel deployments, plus a Supabase-backed shared counter.
+Multiplayer number-guessing game: **Google sign-in**, **host or join** rooms with a **6-letter code**, configurable **rounds** (3–15) and **timer modes**, **real-time** sync via **Supabase Realtime**, and a **question bank** in Postgres.
 
 ## Local dev
 
@@ -10,135 +10,60 @@ npm install
 npm run dev
 ```
 
-Open the dev server URL and confirm the page renders.
+## Database (required)
 
-## Supabase setup (shared counter)
+1. Create a Supabase project.
 
-This demo stores a single shared counter in Supabase and increments it atomically on each click.
+2. In **SQL Editor**, run the migration file:
 
-### 1) Create a Supabase project
+   [`supabase/migrations/20260416120000_game.sql`](supabase/migrations/20260416120000_game.sql)
 
-- Go to the Supabase dashboard, create a new project, and wait for it to finish provisioning.
+   It creates tables (`questions`, `rooms`, `room_players`, `round_guesses`, `round_scores`, …), **RLS**, **RPCs** (`create_room`, `join_room`, `start_game`, `room_tick`, …), seeds sample **questions**, and attaches tables to the **`supabase_realtime`** publication.
 
-### 2) Create DB table + seed row
+   If `ALTER PUBLICATION` errors because a table is already in the publication, remove those lines or ignore the error for that table.
 
-In Supabase Dashboard → SQL Editor, run:
+3. **Auth**: Enable the **Google** provider and configure **Site URL** + **Redirect URLs** (see below).
 
-```sql
-create table if not exists global_counter (
-  id text primary key,
-  value integer not null default 0,
-  updated_at timestamptz not null default now()
-);
+## Environment variables
 
-insert into global_counter (id, value)
-values ('main', 0)
-on conflict (id) do nothing;
-```
-
-### 3) Create atomic increment function (RPC)
-
-In SQL Editor, run:
-
-```sql
-create or replace function increment_global_counter()
-returns integer
-language plpgsql
-as $$
-declare new_value integer;
-begin
-  update global_counter
-  set value = value + 1,
-      updated_at = now()
-  where id = 'main'
-  returning value into new_value;
-
-  return new_value;
-end;
-$$;
-```
-
-### 4) Set env vars (local)
-
-Create `web/.env.local` with:
+Create `web/.env.local`:
 
 ```bash
-SUPABASE_URL="YOUR_SUPABASE_PROJECT_URL"
-SUPABASE_SERVICE_ROLE_KEY="YOUR_SUPABASE_SERVICE_ROLE_KEY"
-VITE_SUPABASE_URL="YOUR_SUPABASE_PROJECT_URL"
-VITE_SUPABASE_ANON_KEY="YOUR_SUPABASE_ANON_KEY"
+VITE_SUPABASE_URL="https://<project-ref>.supabase.co"
+VITE_SUPABASE_ANON_KEY="<anon key>"
 ```
 
-You can find these in Supabase Dashboard → Project Settings → API.
-**Do not expose the service role key in the browser.** This project uses it only in serverless API routes under `web/api/`.
+For production (e.g. Vercel), set the same `VITE_*` variables and redeploy.
 
-### 5) Google sign-in (required to open the app)
+The app talks to Supabase **directly** from the browser (authenticated user JWT). You do **not** need a service role key in the frontend.
 
-The main UI is behind **Supabase Auth** with the **Google** provider. The browser client uses `persistSession` and `detectSessionInUrl` so the OAuth redirect back to your app restores the session.
+## Google sign-in
 
-#### Google Cloud Console
+1. **Google Cloud**: OAuth **Web client**; **Authorized redirect URI** must include  
+   `https://<project-ref>.supabase.co/auth/v1/callback`  
+   **JavaScript origins**: your app URLs (`http://localhost:5173`, production URL).
 
-1. Open [Google Cloud Console](https://console.cloud.google.com/) → **APIs & Services** → **Credentials** → **Create credentials** → **OAuth client ID**.
-2. Application type: **Web application**.
-3. **Authorized JavaScript origins**: add your app origins, e.g. `http://localhost:5173` and `https://your-deployment.vercel.app`.
-4. **Authorized redirect URIs**: add Supabase’s callback (not your app URL):
+2. **Supabase → Authentication → Providers → Google**: paste client ID and secret.
 
-   `https://<your-project-ref>.supabase.co/auth/v1/callback`
+3. **Supabase → Authentication → URL configuration**: **Site URL** = production app URL; **Redirect URLs** include localhost and production (and previews if needed).
 
-   Use your real project ref from Supabase **Project Settings → General → Project ID** (the URL is `https://<project-ref>.supabase.co`).
-
-5. Copy the **Client ID** and **Client secret**.
-
-#### Supabase Dashboard
-
-1. **Authentication → Providers → Google**: enable, paste **Client ID** and **Client Secret** from Google.
-2. **Authentication → URL configuration**:
-   - **Site URL**: your production app URL, e.g. `https://your-deployment.vercel.app`
-   - **Redirect URLs**: add `http://localhost:5173`, your production URL, and any Vercel preview URLs you use.
-
-Redeploy after changing environment variables.
-
-### 6) Enable Realtime + read access for clients (for live updates)
-
-To update all devices instantly, the browser subscribes to changes on `global_counter` using the **anon** key.
-
-1) In Supabase Dashboard → **Realtime**, enable realtime for the `global_counter` table (and ensure the table is included in replication/publication).
-
-2) In Supabase Dashboard → **Table Editor** → `global_counter`, enable **RLS** (Row Level Security), then add this policy so clients can read the one row:
-
-```sql
-alter table public.global_counter enable row level security;
-
-create policy "public read global counter"
-on public.global_counter
-for select
-to anon
-using (id = 'main');
-```
-
-The serverless API still performs the increment using the service role key.
-
-## Vercel deploy (recommended)
-
-In the Vercel “New Project” flow:
+## Vercel
 
 - **Root Directory**: `web`
-- **Build Command**: `npm run build`
-- **Output Directory**: `dist`
+- **Build**: `npm run build`
+- **Output**: `dist`
 
-### Vercel environment variables
+Optional: [`web/api/health.ts`](web/api/health.ts) remains as a simple Vercel health check (no Supabase).
 
-In Vercel Project → Settings → Environment Variables, add:
+## How to play
 
-- `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
+1. Sign in with Google.
+2. Set a **nickname**, then **Host room** or **Join** with a 6-letter code.
+3. Host configures **timer mode** and **rounds**, then **Start game**.
+4. Each round: read the **question**, enter a **numeric guess** before time runs out.
+5. **Results** show the correct answer, guesses, and **points** \(higher is better: \(1 / (1 + \text{relative error})\)\). Everyone taps **I'm ready** (or wait **10s**) to continue.
+6. After the last round, see **Final scores**. Host taps **Back to lobby** to reset the room for another game.
 
-Then redeploy.
+## Adding questions
 
-After deploy, visit your site and confirm:
-
-- You are prompted to **Sign in with Google**, then you reach the main page
-- The page successfully fetches `GET /api/health` and prints JSON
-- The page shows a “Shared count” that increments and persists across refreshes/devices
+Insert rows into `public.questions` (SQL Editor or dashboard) with `prompt` and `answer`. Answers are not exposed to clients during the guessing phase (RLS + `get_question_prompt` RPC).
