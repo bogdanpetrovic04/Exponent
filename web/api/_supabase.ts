@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
 function requiredEnv(name: string): string {
-  const v = process.env[name]
+  const v = (globalThis as any)?.process?.env?.[name] as string | undefined
   if (!v) throw new Error(`Missing environment variable: ${name}`)
   return v
 }
