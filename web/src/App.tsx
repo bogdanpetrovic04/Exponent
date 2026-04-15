@@ -1,10 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
+import { supabase } from './supabaseClient'
 import './App.css'
 
 function App() {
   const [count, setCount] = useState<number | null>(null)
   const [counterError, setCounterError] = useState<string | null>(null)
   const [counterBusy, setCounterBusy] = useState(false)
+  const [realtimeStatus, setRealtimeStatus] = useState<
+    'disabled' | 'connecting' | 'connected' | 'error'
+  >('disabled')
   const [health, setHealth] = useState<unknown>(null)
   const [healthError, setHealthError] = useState<string | null>(null)
 
@@ -12,6 +16,7 @@ function App() {
 
   useEffect(() => {
     let cancelled = false
+    let unsubscribe: (() => void) | null = null
 
     async function loadCounter() {
       try {
@@ -45,8 +50,45 @@ function App() {
 
     loadCounter()
     run()
+
+    if (!supabase) {
+      setRealtimeStatus('disabled')
+    } else {
+      const sb = supabase
+      setRealtimeStatus('connecting')
+      const channel = sb
+        .channel('global-counter')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'global_counter',
+            filter: 'id=eq.main',
+          },
+          (payload) => {
+            const next =
+              (payload as any)?.new?.value ??
+              (payload as any)?.record?.value ??
+              null
+            if (typeof next === 'number') setCount(next)
+          },
+        )
+        .subscribe((status) => {
+          if (cancelled) return
+          if (status === 'SUBSCRIBED') setRealtimeStatus('connected')
+          else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT')
+            setRealtimeStatus('error')
+        })
+
+      unsubscribe = () => {
+        sb.removeChannel(channel)
+      }
+    }
+
     return () => {
       cancelled = true
+      unsubscribe?.()
     }
   }, [])
 
@@ -106,6 +148,14 @@ function App() {
               This value is stored in Supabase and shared across all users.
             </p>
           )}
+          <p style={{ color: 'var(--text)', marginTop: 8 }}>
+            Realtime:{' '}
+            <code>
+              {realtimeStatus === 'disabled'
+                ? 'disabled (set VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY)'
+                : realtimeStatus}
+            </code>
+          </p>
         </div>
 
         <div style={{ width: '100%', maxWidth: 720, textAlign: 'left' }}>
