@@ -355,6 +355,7 @@ function LobbyPhase({
   const topicLabel = (t: TopicRow) => `${t.name} - ${t.short_description}`
   const selectedTopic = topics.find((t) => t.id === topicId) ?? null
   const [autoSaveReady, setAutoSaveReady] = useState(false)
+  const [saving, setSaving] = useState(false)
 
   useEffect(() => {
     // Avoid firing autosave on first render; we only want user-driven changes.
@@ -364,11 +365,42 @@ function LobbyPhase({
 
   useEffect(() => {
     if (!isHost || !autoSaveReady) return
+    const dirty =
+      tm !== room.time_mode ||
+      rounds !== room.rounds_total ||
+      questionSeconds !== room.question_seconds ||
+      topicMode !== room.topic_mode ||
+      topicId !== room.topic_id
+    if (!dirty) {
+      setSaving(false)
+      return
+    }
     const id = window.setTimeout(() => {
+      setSaving(true)
       onUpdateSettings(tm, rounds, topicMode, topicId, questionSeconds)
     }, 400)
     return () => window.clearTimeout(id)
-  }, [isHost, autoSaveReady, tm, rounds, topicMode, topicId, questionSeconds, onUpdateSettings])
+  }, [
+    isHost,
+    autoSaveReady,
+    tm,
+    rounds,
+    topicMode,
+    topicId,
+    questionSeconds,
+    room.time_mode,
+    room.rounds_total,
+    room.question_seconds,
+    room.topic_mode,
+    room.topic_id,
+    onUpdateSettings,
+  ])
+
+  useEffect(() => {
+    if (!saving) return
+    const id = window.setTimeout(() => setSaving(false), 1200)
+    return () => window.clearTimeout(id)
+  }, [saving])
 
   return (
     <>
@@ -469,6 +501,11 @@ function LobbyPhase({
                 ))}
               </select>
             ) : null}
+
+            <p style={{ color: 'var(--text)', marginTop: 10, fontSize: '13px' }}>
+              {saving ? 'Saving…' : 'Saved'} · room topic: <code>{room.topic_id.slice(0, 8)}</code> · selected:{' '}
+              <code>{topicId.slice(0, 8)}</code>
+            </p>
 
             {selectedTopic ? (
               <p style={{ color: 'var(--text)', marginTop: 10, fontSize: '14px' }}>
