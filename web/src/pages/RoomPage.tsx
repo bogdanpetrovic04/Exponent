@@ -59,6 +59,19 @@ export default function RoomPage() {
     )
   }, [room?.reveal_deadline_at, now])
 
+  const guessScientific = useMemo(() => {
+    const s = guessInput.trim()
+    if (s === '' || s === '-' || s === '.' || s === '-.') return null
+    const n = Number(s)
+    if (!Number.isFinite(n)) return null
+    if (n === 0) return { mantissa: '0', exp: 0 }
+    const abs = Math.abs(n)
+    const exp = Math.floor(Math.log10(abs))
+    const mantissaNum = n / 10 ** exp
+    const mantissa = Number.isFinite(mantissaNum) ? mantissaNum.toPrecision(3) : String(mantissaNum)
+    return { mantissa, exp }
+  }, [guessInput])
+
   async function callRpc(name: string, args: Record<string, unknown>): Promise<boolean> {
     if (!supabase) return false
     setBusy(true)
@@ -214,15 +227,46 @@ export default function RoomPage() {
           <p className="game-timer">
             {questionSecondsLeft !== null ? `${questionSecondsLeft}s` : 'Timer starts after first guess'}
           </p>
-          <input
-            className="game-input"
-            type="number"
-            step="any"
-            value={guessInput}
-            onChange={(e) => setGuessInput(e.target.value)}
-            placeholder="Your guess"
-            style={{ marginTop: 16 }}
-          />
+          <div
+            style={{
+              marginTop: 16,
+              display: 'flex',
+              gap: 12,
+              alignItems: 'center',
+            }}
+          >
+            <input
+              className="game-input"
+              type="number"
+              step="any"
+              value={guessInput}
+              onChange={(e) => setGuessInput(e.target.value)}
+              placeholder="Your guess"
+            />
+            <div
+              style={{
+                minWidth: 110,
+                textAlign: 'right',
+                color: 'var(--text)',
+                fontFamily: 'var(--mono)',
+                fontSize: 14,
+                lineHeight: '18px',
+              }}
+              aria-label="Scientific notation preview"
+            >
+              {guessScientific ? (
+                guessScientific.exp === 0 ? (
+                  <span>{guessScientific.mantissa}</span>
+                ) : (
+                  <span>
+                    {guessScientific.mantissa} × 10<sup>{guessScientific.exp}</sup>
+                  </span>
+                )
+              ) : (
+                <span style={{ opacity: 0.6 }}> </span>
+              )}
+            </div>
+          </div>
           <button
             type="button"
             className="counter"
