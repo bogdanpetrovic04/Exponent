@@ -68,11 +68,13 @@ export function useRoomState(roomId: string | undefined) {
 
   const refreshTopics = useCallback(async () => {
     if (!supabase) return
-    const { data } = await supabase.from('topics').select('*').order('name', { ascending: true })
+    const { data } = await supabase.from('topics').select('*')
     const rows = (data ?? []) as TopicRow[]
+
+    const norm = (s: string) => s.trim().toLowerCase()
     rows.sort((a, b) => {
-      const aIsSample = a.name === 'Sample topic' && a.short_description === 'Seeded'
-      const bIsSample = b.name === 'Sample topic' && b.short_description === 'Seeded'
+      const aIsSample = norm(a.name) === 'sample topic' && norm(a.short_description) === 'seeded'
+      const bIsSample = norm(b.name) === 'sample topic' && norm(b.short_description) === 'seeded'
       if (aIsSample !== bIsSample) return aIsSample ? -1 : 1
       const aLabel = `${a.name} - ${a.short_description}`.toLowerCase()
       const bLabel = `${b.name} - ${b.short_description}`.toLowerCase()
