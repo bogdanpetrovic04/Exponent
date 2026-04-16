@@ -124,7 +124,6 @@ export default function LobbyPage() {
       </div>
 
       <div className="game-card">
-        <h2 style={{ margin: '0 0 16px', fontSize: '20px' }}>Host a room</h2>
         <button
           type="button"
           className="counter"
@@ -134,10 +133,7 @@ export default function LobbyPage() {
         >
           {busy ? '…' : 'Host room'}
         </button>
-      </div>
-
-      <div className="game-card">
-        <h2 style={{ margin: '0 0 12px', fontSize: '20px' }}>Join a room</h2>
+        <p style={{ textAlign: 'center', margin: '14px 0', color: 'var(--text)' }}>or</p>
         <input
           className="game-input"
           value={joinCode}
@@ -153,7 +149,7 @@ export default function LobbyPage() {
           disabled={busy}
           onClick={handleJoin}
         >
-          {busy ? '…' : 'Play'}
+          {busy ? '…' : 'Join room'}
         </button>
       </div>
 
