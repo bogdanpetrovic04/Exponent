@@ -17,8 +17,9 @@
   --shadow-1: 0 10px 24px rgba(0, 0, 0, 0.45);
   --shadow-2: 0 22px 70px rgba(0, 0, 0, 0.55);
 
-  --r1: 10px;
-  --r2: 16px;
+  --r1: 14px;
+  --r2: 22px;
+  --pill: 999px;
   --s1: 8px;
   --s2: 12px;
   --s3: 16px;
@@ -128,6 +129,7 @@ code,
     linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 38%),
     rgba(15, 23, 42, 0.60);
   box-shadow: 0 18px 55px rgba(0, 0, 0, 0.58), 0 0 0 1px rgba(34, 211, 238, 0.10);
+  border-radius: var(--pill);
   cursor: pointer;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
@@ -144,8 +146,16 @@ code,
 }
 
 .counter:active {
-  transform: translateY(1px) scale(0.99);
+  transform: translateY(1px) scale(0.985);
   filter: brightness(0.98);
+}
+
+.counter:focus-visible {
+  outline: none;
+  box-shadow:
+    0 18px 55px rgba(0, 0, 0, 0.58),
+    0 0 0 1px rgba(34, 211, 238, 0.12),
+    0 0 0 4px rgba(34, 211, 238, 0.10);
 }
 
 .counter:disabled {

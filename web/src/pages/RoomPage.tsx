@@ -54,6 +54,14 @@ export default function RoomPage() {
     )
   }, [room?.question_deadline_at, now])
 
+  const questionTimeFrac = useMemo(() => {
+    if (!room?.question_deadline_at) return null
+    const deadlineMs = new Date(room.question_deadline_at).getTime()
+    const totalMs = Math.max(1, (room.question_seconds ?? 30) * 1000)
+    const left = Math.max(0, Math.min(1, (deadlineMs - now) / totalMs))
+    return left
+  }, [room?.question_deadline_at, room?.question_seconds, now])
+
   const revealSecondsLeft = useMemo(() => {
     if (!room?.reveal_deadline_at) return null
     return Math.max(
@@ -225,6 +233,14 @@ export default function RoomPage() {
           <p className="game-timer">
             {questionSecondsLeft !== null ? `${questionSecondsLeft}s` : 'Timer starts after first guess'}
           </p>
+
+          {questionTimeFrac !== null ? (
+            <div style={{ marginTop: 10 }} className={questionSecondsLeft !== null && questionSecondsLeft <= 5 ? 'pulse-soft' : ''}>
+              <div className="timebar" aria-label="Time remaining">
+                <div style={{ width: `${Math.round(questionTimeFrac * 100)}%` }} />
+              </div>
+            </div>
+          ) : null}
           <div
             style={{
               marginTop: 16,

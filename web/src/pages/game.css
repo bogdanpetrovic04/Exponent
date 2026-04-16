@@ -40,6 +40,13 @@
   .btn-ghost {
     transition: none;
   }
+  .timebar > div {
+    transition: none;
+  }
+  .pulse-soft,
+  .shimmer::after {
+    animation: none;
+  }
 }
 
 .shimmer {
@@ -84,7 +91,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   padding: 6px 10px;
-  border-radius: 999px;
+  border-radius: var(--pill);
   background: rgba(15, 23, 42, 0.55);
   border: 1px solid rgba(34, 211, 238, 0.20);
   box-shadow: var(--glow);
@@ -175,7 +182,7 @@
   font-family: var(--sans);
   font-size: 14px;
   padding: 10px 12px;
-  border-radius: 12px;
+  border-radius: var(--pill);
   border: 1px solid rgba(148, 163, 184, 0.16);
   background: rgba(15, 23, 42, 0.35);
   color: var(--text-h);
@@ -211,7 +218,7 @@
   width: 100%;
   box-sizing: border-box;
   padding: 12px 14px;
-  border-radius: 14px;
+  border-radius: var(--pill);
   border: 1px solid rgba(148, 163, 184, 0.16);
   font: inherit;
   background: rgba(10, 14, 22, 0.72);
@@ -223,6 +230,38 @@
 .game-input:focus {
   border-color: rgba(34, 211, 238, 0.34);
   box-shadow: var(--glow);
+}
+
+.timebar {
+  height: 10px;
+  border-radius: var(--pill);
+  background: rgba(148, 163, 184, 0.12);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  overflow: hidden;
+}
+
+.timebar > div {
+  height: 100%;
+  width: 0%;
+  border-radius: var(--pill);
+  background: linear-gradient(90deg, rgba(34, 211, 238, 0.95), rgba(56, 189, 248, 0.75));
+  box-shadow: 0 10px 22px rgba(34, 211, 238, 0.14);
+  transform-origin: left center;
+  transition: width 180ms linear;
+}
+
+.pulse-soft {
+  animation: pulseSoft 1400ms ease-in-out infinite;
+}
+
+@keyframes pulseSoft {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.06);
+  }
 }
 
 .game-timer {
