@@ -449,23 +449,23 @@ function LobbyPhase({
         </p>
         {isHost ? (
           <>
-            <div style={{ marginTop: 16 }}>
-              <label style={{ marginRight: 12 }}>
-                <input
-                  type="radio"
-                  checked={tm === 'total_30'}
-                  onChange={() => setTm('total_30')}
-                />{' '}
+            <div className="toggle-group" role="group" aria-label="Timer mode">
+              <button
+                type="button"
+                className="toggle-btn"
+                aria-pressed={tm === 'total_30'}
+                onClick={() => setTm('total_30')}
+              >
                 Total time
-              </label>
-              <label>
-                <input
-                  type="radio"
-                  checked={tm === 'after_first_30'}
-                  onChange={() => setTm('after_first_30')}
-                />{' '}
-                Time after first guess
-              </label>
+              </button>
+              <button
+                type="button"
+                className="toggle-btn"
+                aria-pressed={tm === 'after_first_30'}
+                onClick={() => setTm('after_first_30')}
+              >
+                After first guess
+              </button>
             </div>
 
             <label style={{ display: 'block', marginTop: 12 }}>
@@ -491,34 +491,31 @@ function LobbyPhase({
             />
 
             <label style={{ display: 'block', marginTop: 16, marginBottom: 8 }}>Topic</label>
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              <label>
-                <input
-                  type="radio"
-                  name="topicMode"
-                  checked={topicMode === 'preset'}
-                  onChange={() => setTopicMode('preset')}
-                />{' '}
+            <div className="toggle-group" role="group" aria-label="Topic mode">
+              <button
+                type="button"
+                className="toggle-btn"
+                aria-pressed={topicMode === 'preset'}
+                onClick={() => setTopicMode('preset')}
+              >
                 Preset
-              </label>
-              <label>
-                <input
-                  type="radio"
-                  name="topicMode"
-                  checked={topicMode === 'random'}
-                  onChange={() => setTopicMode('random')}
-                />{' '}
+              </button>
+              <button
+                type="button"
+                className="toggle-btn"
+                aria-pressed={topicMode === 'random'}
+                onClick={() => setTopicMode('random')}
+              >
                 Random
-              </label>
-              <label>
-                <input
-                  type="radio"
-                  name="topicMode"
-                  checked={topicMode === 'ai_custom'}
-                  onChange={() => setTopicMode('ai_custom')}
-                />{' '}
+              </button>
+              <button
+                type="button"
+                className="toggle-btn"
+                aria-pressed={topicMode === 'ai_custom'}
+                onClick={() => setTopicMode('ai_custom')}
+              >
                 Custom AI
-              </label>
+              </button>
             </div>
 
             {topicMode === 'preset' ? (
