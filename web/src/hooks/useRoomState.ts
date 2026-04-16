@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
-import type { RoomPlayerRow, RoomRow, RoundGuessRow, RoundScoreRow } from '../types/game'
+import type { GamePhase, RoomPlayerRow, RoomRow, RoundGuessRow, RoundScoreRow } from '../types/game'
+
+const PHASES: readonly GamePhase[] = ['lobby', 'question', 'reveal', 'final']
+
+function isGamePhase(s: string): s is GamePhase {
+  return (PHASES as readonly string[]).includes(s)
+}
 
 export function useRoomState(roomId: string | undefined) {
   const [room, setRoom] = useState<RoomRow | null>(null)
@@ -9,6 +15,12 @@ export function useRoomState(roomId: string | undefined) {
   const [guesses, setGuesses] = useState<RoundGuessRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [tickError, setTickError] = useState<string | null>(null)
+
+  const applyTickPhase = useCallback((data: unknown) => {
+    if (typeof data !== 'string' || !isGamePhase(data) || !roomId) return
+    setRoom((prev) => (prev && prev.id === roomId ? { ...prev, phase: data } : prev))
+  }, [roomId])
 
   const refresh = useCallback(async () => {
     if (!supabase || !roomId) return
@@ -123,10 +135,17 @@ export function useRoomState(roomId: string | undefined) {
       .subscribe()
 
     const runTick = () =>
-      void sb.rpc('room_tick', { p_room_id: roomId }).then(({ error: tickErr }) => {
-        if (!tickErr) void refresh()
+      void sb.rpc('room_tick', { p_room_id: roomId }).then(({ data, error: tickErr }) => {
+        if (tickErr) {
+          setTickError(tickErr.message)
+          return
+        }
+        setTickError(null)
+        applyTickPhase(data)
+        void refresh()
       })
 
+    void runTick()
     const tick = window.setInterval(runTick, 1500)
 
     const onVisible = () => {
@@ -143,7 +162,7 @@ export function useRoomState(roomId: string | undefined) {
       void sb.removeChannel(chGuesses)
       window.clearInterval(tick)
     }
-  }, [roomId, refresh])
+  }, [roomId, refresh, applyTickPhase])
 
   // If the client clock shows the question timer has expired but we still have question phase,
   // poll faster than the main interval (background tabs throttle setInterval heavily).
@@ -155,14 +174,30 @@ export function useRoomState(roomId: string | undefined) {
     if (new Date(room.question_deadline_at).getTime() > Date.now()) return
 
     const runTick = () =>
-      void sb.rpc('room_tick', { p_room_id: roomId }).then(({ error: tickErr }) => {
-        if (!tickErr) void refresh()
+      void sb.rpc('room_tick', { p_room_id: roomId }).then(({ data, error: tickErr }) => {
+        if (tickErr) {
+          setTickError(tickErr.message)
+          return
+        }
+        setTickError(null)
+        applyTickPhase(data)
+        void refresh()
       })
 
     runTick()
     const urgent = window.setInterval(runTick, 500)
     return () => window.clearInterval(urgent)
-  }, [roomId, refresh, room])
+  }, [roomId, refresh, room, applyTickPhase])
 
-  return { room, players, scores, guesses, loading, error, refresh }
+  // Fallback if Realtime misses updates: cheap poll while a round is active.
+  useEffect(() => {
+    if (!roomId || !supabase || !room) return
+    if (room.phase !== 'question' && room.phase !== 'reveal') return
+    const id = window.setInterval(() => void refresh(), 4000)
+    return () => window.clearInterval(id)
+    // Intentionally omit `room` — only restart when leaving question/reveal, not on every row refresh.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- room?.phase + guard above is enough
+  }, [roomId, refresh, room?.phase])
+
+  return { room, players, scores, guesses, loading, error, tickError, refresh }
 }

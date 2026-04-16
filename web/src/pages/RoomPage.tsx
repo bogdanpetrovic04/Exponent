@@ -8,7 +8,7 @@ import './game.css'
 export default function RoomPage() {
   const { roomId } = useParams<{ roomId: string }>()
   const navigate = useNavigate()
-  const { room, players, scores, guesses, loading, error } = useRoomState(roomId)
+  const { room, players, scores, guesses, loading, error, tickError } = useRoomState(roomId)
   const [userId, setUserId] = useState<string | null>(null)
   const [prompt, setPrompt] = useState<string | null>(null)
   const [guessInput, setGuessInput] = useState('')
@@ -129,6 +129,11 @@ export default function RoomPage() {
       {actionError ? (
         <p style={{ color: '#f87171', marginBottom: 12 }} role="alert">
           {actionError}
+        </p>
+      ) : null}
+      {tickError ? (
+        <p style={{ color: '#fbbf24', marginBottom: 12 }} role="status">
+          Sync: {tickError}
         </p>
       ) : null}
 
