@@ -21,6 +21,8 @@ npm run dev
    - [`supabase/migrations/20260416200000_early_reveal_scoring.sql`](supabase/migrations/20260416200000_early_reveal_scoring.sql)
    - [`supabase/migrations/20260416210000_topics.sql`](supabase/migrations/20260416210000_topics.sql)
    - [`supabase/migrations/20260416211000_topics_rpcs.sql`](supabase/migrations/20260416211000_topics_rpcs.sql)
+   - [`supabase/migrations/20260416220000_round_length_and_reveal_15s.sql`](supabase/migrations/20260416220000_round_length_and_reveal_15s.sql)
+   - [`supabase/migrations/20260416224000_sample_topic_and_reveal_30s.sql`](supabase/migrations/20260416224000_sample_topic_and_reveal_30s.sql)
 
    If you deployed an **older** version of this file before those fixes, re-run **only** the block at the bottom of the current file from `-- RLS: RPCs run as invoker` through the last `alter function ... set row_security to off;`, or run the whole file again (use `create or replace` / `drop policy if exists` where applicable).
 

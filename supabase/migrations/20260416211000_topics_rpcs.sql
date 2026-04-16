@@ -64,7 +64,7 @@ begin
 
   select t.id into tid
   from public.topics t
-  where t.name = 'General' and t.short_description = 'Seeded'
+  where t.name = 'Sample topic' and t.short_description = 'Seeded'
   limit 1;
   if tid is null then raise exception 'default topic missing'; end if;
 
