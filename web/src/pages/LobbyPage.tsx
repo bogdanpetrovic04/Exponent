@@ -49,10 +49,19 @@ export default function LobbyPage() {
         p_time_mode: timeMode,
         p_rounds: rounds,
       })
-      if (err) throw err
-      const row = Array.isArray(data) ? data[0] : data
-      const rid = row?.room_id as string | undefined
-      if (!rid) throw new Error('No room id returned')
+      if (err) {
+        const msg = [err.message, 'details' in err ? String((err as { details?: string }).details) : '']
+          .filter(Boolean)
+          .join(' — ')
+        throw new Error(msg || err.message)
+      }
+      const raw = data as unknown
+      const row = Array.isArray(raw) ? raw[0] : raw
+      const rid =
+        row && typeof row === 'object' && 'room_id' in row
+          ? String((row as { room_id: string }).room_id)
+          : undefined
+      if (!rid) throw new Error('No room id returned from create_room')
       navigate(`/room/${rid}`)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not create room')
