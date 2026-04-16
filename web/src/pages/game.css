@@ -114,6 +114,7 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 15px;
+  table-layout: fixed;
 }
 
 .game-table th {
@@ -126,6 +127,9 @@
 .game-table td {
   padding: 10px 0;
   border-top: 1px solid rgba(148, 163, 184, 0.10);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .game-table td:last-child,
@@ -138,21 +142,20 @@
   text-align: right;
 }
 
-/* Mobile: keep one row per player; allow horizontal scroll if needed. */
-.table-scroll {
-  width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-.table-scroll::-webkit-scrollbar {
-  display: none;
-}
-
 @media (max-width: 520px) {
   .game-table {
-    min-width: 520px;
+    font-size: 14px;
   }
+}
+
+.cell-player {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cell-num {
+  font-variant-numeric: tabular-nums;
 }
 
 .btn-ghost {

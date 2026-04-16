@@ -5,6 +5,17 @@ import { useRoomState } from '../hooks/useRoomState'
 import type { GameTimeMode, RoomPlayerRow, RoomRow, RoundGuessRow, RoundScoreRow, TopicMode, TopicRow } from '../types/game'
 import './game.css'
 
+function formatCompactNumber(n: number): string {
+  if (!Number.isFinite(n)) return '—'
+  const abs = Math.abs(n)
+  if (abs >= 10000 || (abs > 0 && abs < 0.001)) {
+    return n.toExponential(2).replace('e+', 'e')
+  }
+  if (abs >= 1000) return n.toFixed(0)
+  if (abs >= 10) return n.toFixed(2)
+  return n.toPrecision(3)
+}
+
 export default function RoomPage() {
   const { roomId } = useParams<{ roomId: string }>()
   const navigate = useNavigate()
@@ -658,8 +669,13 @@ function RevealPhase({
       <p style={{ color: 'var(--text)', fontSize: '14px', marginBottom: 8 }}>
         Score: 0 = exact answer; no guess = 1; lower is better.
       </p>
-      <div className="table-scroll">
-        <table className="game-table">
+      <table className="game-table">
+        <colgroup>
+          <col style={{ width: 34 }} />
+          <col />
+          <col style={{ width: 96 }} />
+          <col style={{ width: 90 }} />
+        </colgroup>
           <thead>
             <tr>
               <th>#</th>
@@ -671,15 +687,14 @@ function RevealPhase({
           <tbody>
             {roundScores.map((s, i) => (
               <tr key={s.user_id}>
-                <td>{i + 1}</td>
-                <td>{nick(s.user_id)}</td>
-                <td>{guessOf(s.user_id) ?? '—'}</td>
-                <td>{s.points.toFixed(4)}</td>
+                <td className="cell-num">{i + 1}</td>
+                <td className="cell-player">{nick(s.user_id)}</td>
+                <td className="cell-num">{guessOf(s.user_id) === null || guessOf(s.user_id) === undefined ? '—' : formatCompactNumber(guessOf(s.user_id)!)}</td>
+                <td className="cell-num">{formatCompactNumber(s.points)}</td>
               </tr>
             ))}
           </tbody>
-        </table>
-      </div>
+      </table>
       <button
         type="button"
         className="counter"
