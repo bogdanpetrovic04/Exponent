@@ -309,6 +309,22 @@ function LobbyPhase({
 
   const active = players.filter((p) => !p.kicked_at)
   const topicLabel = (t: TopicRow) => `${t.name} - ${t.short_description}`
+  const selectedTopic = topics.find((t) => t.id === topicId) ?? null
+  const [autoSaveReady, setAutoSaveReady] = useState(false)
+
+  useEffect(() => {
+    // Avoid firing autosave on first render; we only want user-driven changes.
+    const id = window.setTimeout(() => setAutoSaveReady(true), 0)
+    return () => window.clearTimeout(id)
+  }, [])
+
+  useEffect(() => {
+    if (!isHost || !autoSaveReady) return
+    const id = window.setTimeout(() => {
+      onUpdateSettings(tm, rounds, topicMode, topicId, questionSeconds)
+    }, 400)
+    return () => window.clearTimeout(id)
+  }, [isHost, autoSaveReady, tm, rounds, topicMode, topicId, questionSeconds, onUpdateSettings])
 
   return (
     <>
@@ -342,7 +358,9 @@ function LobbyPhase({
               </label>
             </div>
 
-            <label style={{ display: 'block', marginTop: 12 }}>Round length ({questionSeconds}s)</label>
+            <label style={{ display: 'block', marginTop: 12 }}>
+              {tm === 'total_30' ? 'Total time' : 'Time after first guess'} ({questionSeconds}s)
+            </label>
             <input
               type="range"
               min={10}
@@ -408,6 +426,12 @@ function LobbyPhase({
               </select>
             ) : null}
 
+            {selectedTopic ? (
+              <p style={{ color: 'var(--text)', marginTop: 10, fontSize: '14px' }}>
+                Selected: <strong>{topicLabel(selectedTopic)}</strong>
+              </p>
+            ) : null}
+
             {topicMode === 'ai_custom' ? (
               <div style={{ marginTop: 12 }}>
                 <textarea
@@ -431,7 +455,6 @@ function LobbyPhase({
                         if (!res) return
                         setTopicMode('ai_custom')
                         setTopicId(res.topicId)
-                        onUpdateSettings(tm, rounds, 'ai_custom', res.topicId, questionSeconds)
                         setAiDescription('')
                       } finally {
                         setAiBusy(false)
@@ -443,16 +466,6 @@ function LobbyPhase({
                 </button>
               </div>
             ) : null}
-
-            <button
-              type="button"
-              className="btn-ghost"
-              style={{ marginTop: 12 }}
-              disabled={busy}
-              onClick={() => onUpdateSettings(tm, rounds, topicMode, topicId, questionSeconds)}
-            >
-              Save settings
-            </button>
           </>
         ) : null}
       </div>
