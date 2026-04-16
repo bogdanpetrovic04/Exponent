@@ -262,8 +262,12 @@ export default function RoomPage() {
           >
             <input
               className="game-input"
-              type="number"
-              step="any"
+              type="text"
+              inputMode="decimal"
+              enterKeyHint="done"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
               value={guessInput}
               onChange={(e) => setGuessInput(e.target.value)}
               placeholder="Your guess"

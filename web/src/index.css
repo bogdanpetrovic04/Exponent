@@ -50,6 +50,20 @@
   box-sizing: border-box;
 }
 
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  -webkit-appearance: none;
+  appearance: none;
+  text-decoration: none;
+}
+
 #root {
   width: 1126px;
   max-width: 100%;
@@ -132,6 +146,7 @@ code {
   border-radius: var(--pill);
   font-weight: 650;
   letter-spacing: 0.2px;
+  color: var(--text-h);
   cursor: pointer;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
