@@ -16,13 +16,8 @@ npm run dev
 
 2. In **SQL Editor**, run these migrations in order:
 
-   - [`supabase/migrations/20260416120000_game.sql`](supabase/migrations/20260416120000_game.sql)
-   - [`supabase/migrations/20260416180000_room_tick_phase_and_helpers.sql`](supabase/migrations/20260416180000_room_tick_phase_and_helpers.sql)
-   - [`supabase/migrations/20260416200000_early_reveal_scoring.sql`](supabase/migrations/20260416200000_early_reveal_scoring.sql)
-   - [`supabase/migrations/20260416210000_topics.sql`](supabase/migrations/20260416210000_topics.sql)
-   - [`supabase/migrations/20260416211000_topics_rpcs.sql`](supabase/migrations/20260416211000_topics_rpcs.sql)
-   - [`supabase/migrations/20260416220000_round_length_and_reveal_15s.sql`](supabase/migrations/20260416220000_round_length_and_reveal_15s.sql)
-   - [`supabase/migrations/20260416224000_sample_topic_and_reveal_30s.sql`](supabase/migrations/20260416224000_sample_topic_and_reveal_30s.sql)
+   - [`supabase/migrations/20260417000000_schema.sql`](supabase/migrations/20260417000000_schema.sql)
+   - [`supabase/migrations/20260417000001_rpcs.sql`](supabase/migrations/20260417000001_rpcs.sql)
 
    If you deployed an **older** version of this file before those fixes, re-run **only** the block at the bottom of the current file from `-- RLS: RPCs run as invoker` through the last `alter function ... set row_security to off;`, or run the whole file again (use `create or replace` / `drop policy if exists` where applicable).
 
@@ -71,7 +66,7 @@ The app talks to Supabase **directly** from the browser (authenticated user JWT)
 - **Node**: Use **20.x** or newer (see `web/.nvmrc` and `engines` in `web/package.json`). `react-router-dom` v7 requires Node ≥ 20.
 - Commit **`web/package.json`** and **`web/package-lock.json`** together after `npm install` so Vercel installs `react-router-dom`. If the build says it cannot find `react-router-dom`, your deployed branch is missing those files or an outdated lockfile.
 
-Optional: [`web/api/health.ts`](web/api/health.ts) remains as a simple Vercel health check (no Supabase).
+The app doesn’t require any custom server endpoints for normal play (it talks directly to Supabase from the browser).
 
 ## How to play
 
