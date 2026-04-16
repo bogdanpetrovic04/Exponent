@@ -122,11 +122,21 @@ export function useRoomState(roomId: string | undefined) {
       )
       .subscribe()
 
-    const tick = window.setInterval(() => {
-      void sb.rpc('room_tick', { p_room_id: roomId })
-    }, 1500)
+    const runTick = () =>
+      void sb.rpc('room_tick', { p_room_id: roomId }).then(({ error: tickErr }) => {
+        if (!tickErr) void refresh()
+      })
+
+    const tick = window.setInterval(runTick, 1500)
+
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return
+      runTick()
+    }
+    document.addEventListener('visibilitychange', onVisible)
 
     return () => {
+      document.removeEventListener('visibilitychange', onVisible)
       void sb.removeChannel(chRooms)
       void sb.removeChannel(chPlayers)
       void sb.removeChannel(chScores)
@@ -134,6 +144,25 @@ export function useRoomState(roomId: string | undefined) {
       window.clearInterval(tick)
     }
   }, [roomId, refresh])
+
+  // If the client clock shows the question timer has expired but we still have question phase,
+  // poll faster than the main interval (background tabs throttle setInterval heavily).
+  useEffect(() => {
+    const sb = supabase
+    if (!roomId || !sb || !room) return
+    if (room.phase !== 'question') return
+    if (!room.question_deadline_at) return
+    if (new Date(room.question_deadline_at).getTime() > Date.now()) return
+
+    const runTick = () =>
+      void sb.rpc('room_tick', { p_room_id: roomId }).then(({ error: tickErr }) => {
+        if (!tickErr) void refresh()
+      })
+
+    runTick()
+    const urgent = window.setInterval(runTick, 500)
+    return () => window.clearInterval(urgent)
+  }, [roomId, refresh, room])
 
   return { room, players, scores, guesses, loading, error, refresh }
 }
