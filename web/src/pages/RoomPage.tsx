@@ -167,7 +167,7 @@ export default function RoomPage() {
 
   return (
     <section className="game-layout">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
         <Link to="/" style={{ color: 'var(--text-h)' }}>
           ← Lobby
         </Link>

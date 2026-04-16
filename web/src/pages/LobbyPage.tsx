@@ -118,10 +118,10 @@ export default function LobbyPage() {
 
   return (
     <section className="game-layout" id="center">
-      <div style={{ textAlign: 'center', marginBottom: 28 }}>
+      <div style={{ textAlign: 'center', marginBottom: 18 }}>
         <h1>Exponent</h1>
-        <p style={{ color: 'var(--text)', marginTop: 8 }}>
-          Guess the number closest to the answer. Play together in real time.
+        <p style={{ color: 'var(--muted)', marginTop: 6 }}>
+          Real-time guessing with friends.
         </p>
       </div>
 
@@ -148,7 +148,7 @@ export default function LobbyPage() {
         >
           {busy ? '…' : 'Host room'}
         </button>
-        <p style={{ textAlign: 'center', margin: '14px 0', color: 'var(--text)' }}>or</p>
+        <p style={{ textAlign: 'center', margin: '14px 0', color: 'var(--muted)' }}>or</p>
         <input
           className="game-input"
           value={joinCode}

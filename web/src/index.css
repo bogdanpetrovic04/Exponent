@@ -1,21 +1,21 @@
 :root {
-  --bg: #f5f5f2;
-  --surface: rgba(255, 255, 255, 0.92);
-  --surface-2: rgba(250, 250, 247, 0.96);
-  --border: rgba(17, 24, 39, 0.08);
-  --text: rgba(31, 41, 55, 0.72);
-  --text-h: rgba(10, 10, 10, 0.96);
-  --muted: rgba(107, 114, 128, 0.78);
+  --bg: #070A10;
+  --surface: rgba(17, 22, 34, 0.78);
+  --surface-2: rgba(11, 14, 22, 0.86);
+  --border: rgba(148, 163, 184, 0.14);
+  --text: rgba(226, 232, 240, 0.78);
+  --text-h: rgba(248, 250, 252, 0.98);
+  --muted: rgba(148, 163, 184, 0.80);
 
-  --accent: #2563eb;
-  --accent-2: #1d4ed8;
-  --accent-bg: rgba(37, 99, 235, 0.08);
-  --accent-border: rgba(37, 99, 235, 0.22);
-  --glow: 0 0 0 1px rgba(37, 99, 235, 0.10);
+  --accent: #22D3EE;
+  --accent-2: #38BDF8;
+  --accent-bg: rgba(34, 211, 238, 0.10);
+  --accent-border: rgba(34, 211, 238, 0.30);
+  --glow: 0 0 0 1px rgba(34, 211, 238, 0.14), 0 18px 55px rgba(34, 211, 238, 0.06);
 
-  --code-bg: rgba(243, 244, 246, 0.95);
-  --shadow-1: 0 8px 24px rgba(15, 23, 42, 0.06);
-  --shadow-2: 0 24px 60px rgba(15, 23, 42, 0.10);
+  --code-bg: rgba(15, 23, 42, 0.62);
+  --shadow-1: 0 10px 24px rgba(0, 0, 0, 0.45);
+  --shadow-2: 0 22px 70px rgba(0, 0, 0, 0.55);
 
   --r1: 10px;
   --r2: 16px;
@@ -30,7 +30,7 @@
 
   font: 16.5px/150% var(--sans);
   letter-spacing: 0.16px;
-  color-scheme: light;
+  color-scheme: dark;
   color: var(--text);
   background: var(--bg);
   font-synthesis: none;
@@ -59,8 +59,10 @@
   display: flex;
   flex-direction: column;
   background:
-    radial-gradient(900px 600px at 20% 10%, rgba(255, 255, 255, 0.70), transparent 56%),
-    radial-gradient(900px 600px at 80% 0%, rgba(37, 99, 235, 0.03), transparent 52%),
+    radial-gradient(1100px 700px at 18% 8%, rgba(34, 211, 238, 0.10), transparent 58%),
+    radial-gradient(1100px 700px at 82% 0%, rgba(56, 189, 248, 0.06), transparent 55%),
+    radial-gradient(900px 650px at 50% 100%, rgba(34, 211, 238, 0.05), transparent 60%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 32%),
     var(--bg);
 }
 
@@ -120,9 +122,12 @@ code,
   justify-content: center;
   gap: 10px;
   padding: 12px 16px;
-  border: 1px solid rgba(37, 99, 235, 0.18);
-  background: linear-gradient(180deg, #1f2937, #111827);
-  box-shadow: 0 10px 24px rgba(17, 24, 39, 0.16);
+  border: 1px solid rgba(34, 211, 238, 0.26);
+  background:
+    linear-gradient(180deg, rgba(34, 211, 238, 0.22), rgba(15, 23, 42, 0.82)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 38%),
+    rgba(15, 23, 42, 0.60);
+  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.58), 0 0 0 1px rgba(34, 211, 238, 0.10);
   cursor: pointer;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
@@ -134,8 +139,8 @@ code,
 }
 
 .counter:hover {
-  border-color: rgba(37, 99, 235, 0.26);
-  filter: brightness(1.03);
+  border-color: rgba(34, 211, 238, 0.34);
+  filter: brightness(1.04);
 }
 
 .counter:active {
