@@ -10,8 +10,9 @@
   border: 1px solid var(--border);
   border-radius: var(--r2);
   padding: 18px;
-  background: linear-gradient(180deg, var(--surface), rgba(18, 23, 36, 0.55));
+  background: linear-gradient(180deg, rgba(18, 23, 36, 0.82), rgba(10, 14, 22, 0.72));
   box-shadow: var(--shadow-1);
+  backdrop-filter: blur(10px);
   margin-bottom: 16px;
 }
 
@@ -83,8 +84,8 @@
   padding: 6px 10px;
   border-radius: 999px;
   background: rgba(15, 23, 42, 0.55);
-  border: 1px solid rgba(34, 211, 238, 0.25);
-  box-shadow: var(--glow);
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
 }
 
 .game-row {
@@ -185,8 +186,8 @@
 }
 
 .btn-ghost:hover {
-  border-color: rgba(34, 211, 238, 0.45);
-  box-shadow: var(--glow);
+  border-color: rgba(148, 163, 184, 0.28);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
 }
 
 .btn-ghost:active {
@@ -218,8 +219,8 @@
 }
 
 .game-input:focus {
-  border-color: rgba(34, 211, 238, 0.55);
-  box-shadow: var(--glow);
+  border-color: rgba(34, 211, 238, 0.42);
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.14), 0 12px 28px rgba(0, 0, 0, 0.35);
 }
 
 .game-timer {
