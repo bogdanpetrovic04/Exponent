@@ -377,6 +377,7 @@ function LobbyPhase({
   const active = players.filter((p) => !p.kicked_at)
   const topicLabel = (t: TopicRow) => `${t.name} - ${t.short_description}`
   const selectedTopic = topics.find((t) => t.id === topicId) ?? null
+  const roomTopic = topics.find((t) => t.id === room.topic_id) ?? null
   const [autoSaveReady, setAutoSaveReady] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
 
@@ -451,6 +452,11 @@ function LobbyPhase({
             : `${room.question_seconds}s after first guess`}
           .
         </p>
+        {roomTopic ? (
+          <p style={{ color: 'var(--text)', marginTop: 8 }}>
+            Topic: <strong>{topicLabel(roomTopic)}</strong>
+          </p>
+        ) : null}
         {isHost ? (
           <>
             <div className="toggle-group" role="group" aria-label="Timer mode">

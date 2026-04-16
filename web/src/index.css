@@ -50,6 +50,11 @@
   box-sizing: border-box;
 }
 
+html,
+body {
+  height: 100%;
+}
+
 button,
 input,
 select,
@@ -70,7 +75,9 @@ button {
   margin: 0 auto;
   text-align: center;
   border-inline: 1px solid rgba(148, 163, 184, 0.10);
+  min-height: 100vh;
   min-height: 100svh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   padding-top: max(env(safe-area-inset-top), constant(safe-area-inset-top));
@@ -89,6 +96,8 @@ body {
   overflow-x: hidden;
   background: var(--bg);
   overscroll-behavior: none;
+  padding-top: max(env(safe-area-inset-top), constant(safe-area-inset-top));
+  padding-bottom: max(env(safe-area-inset-bottom), constant(safe-area-inset-bottom));
 }
 
 @media (max-width: 640px) {
