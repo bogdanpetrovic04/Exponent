@@ -60,6 +60,16 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+function shorten35(s: string): string {
+  const cleaned = s.replace(/\s+/g, ' ').trim()
+  if (!cleaned) return ''
+  if (cleaned.length <= 35) return cleaned
+  const cut = cleaned.slice(0, 35)
+  const lastSpace = cut.lastIndexOf(' ')
+  const out = (lastSpace >= 16 ? cut.slice(0, lastSpace) : cut).trim()
+  return out || cleaned.slice(0, 35).trim()
+}
+
 export default async function handler(req: Req, res: Res) {
   if (req.method !== 'POST') return json(res, 405, { ok: false, error: 'method_not_allowed' })
 
@@ -166,11 +176,11 @@ export default async function handler(req: Req, res: Res) {
 
   const p = asRecord(parsed)
   const topicName = typeof p?.topicName === 'string' ? p.topicName.trim() : ''
-  const shortDescription = typeof p?.shortDescription === 'string' ? p.shortDescription.trim() : ''
+  const modelShort = typeof p?.shortDescription === 'string' ? p.shortDescription.trim() : ''
   const questions = Array.isArray(p?.questions) ? p.questions : null
 
   if (!topicName || topicName.length > 35) return json(res, 422, { ok: false, error: 'invalid_topic_name' })
-  if (!shortDescription || shortDescription.length > 35) return json(res, 422, { ok: false, error: 'invalid_short_description' })
+  const shortDescription = shorten35(modelShort) || shorten35(description) || 'Custom'
   if (!questions || questions.length !== 20) return json(res, 422, { ok: false, error: 'invalid_questions' })
 
   const cleaned: { prompt: string; answer: number; imageQuery: string }[] = []

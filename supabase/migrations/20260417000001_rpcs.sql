@@ -631,6 +631,7 @@ declare
   item jsonb;
   pr text;
   ans double precision;
+  iq text;
 begin
   if uid is null then raise exception 'not authenticated'; end if;
   if p_name is null or char_length(trim(p_name)) < 1 or char_length(trim(p_name)) > 64 then
@@ -655,16 +656,69 @@ begin
     if pr is null or char_length(pr) > 240 then
       raise exception 'invalid_prompt';
     end if;
+    iq := nullif(trim(item->>'imageQuery'), '');
+    if iq is not null and char_length(iq) > 120 then
+      raise exception 'invalid_image_query';
+    end if;
     begin
       ans := (item->>'answer')::double precision;
     exception when others then
       raise exception 'invalid_answer';
     end;
-    insert into public.questions (prompt, answer, topic_id)
-    values (pr, ans, tid);
+    insert into public.questions (prompt, answer, topic_id, image_query)
+    values (pr, ans, tid, iq);
   end loop;
 
   return tid;
+end;
+$$;
+
+-- Question images (cached on questions; answers remain hidden by RLS)
+drop function if exists public.get_question_image(uuid);
+create or replace function public.get_question_image(p_question_id uuid)
+returns table (image_url text, image_source_url text, image_provider text, image_query text)
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  -- SECURITY DEFINER: bypass RLS for questions image cache only.
+  if auth.uid() is null then
+    raise exception 'not_authenticated';
+  end if;
+
+  return query
+  select q.image_url, q.image_source_url, q.image_provider, q.image_query
+  from public.questions q
+  where q.id = p_question_id
+  limit 1;
+end;
+$$;
+
+drop function if exists public.set_question_image(uuid, text, text, text);
+create or replace function public.set_question_image(
+  p_question_id uuid,
+  p_image_url text,
+  p_image_source_url text,
+  p_image_provider text
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  -- SECURITY DEFINER: bypass RLS for questions image cache only.
+  if auth.uid() is null then
+    raise exception 'not_authenticated';
+  end if;
+
+  update public.questions
+  set
+    image_url = p_image_url,
+    image_source_url = p_image_source_url,
+    image_provider = p_image_provider
+  where id = p_question_id;
 end;
 $$;
 

@@ -34,7 +34,11 @@ create table if not exists public.questions (
   id uuid primary key default gen_random_uuid(),
   prompt text not null,
   answer double precision not null,
-  topic_id uuid references public.topics (id)
+  topic_id uuid references public.topics (id),
+  image_query text,
+  image_url text,
+  image_source_url text,
+  image_provider text check (image_provider in ('wikimedia', 'openverse'))
 );
 
 create index if not exists questions_topic_id_idx on public.questions (topic_id);
