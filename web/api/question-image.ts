@@ -144,17 +144,19 @@ export default async function handler(req: Req, res: Res) {
 
   // Cache check (SECURITY DEFINER RPC bypasses questions RLS)
   const { data: cached, error: cErr } = await sb.rpc('get_question_image', { p_question_id: questionId })
+  let imageQueryFromDb: string | null = null
   if (!cErr && Array.isArray(cached) && cached[0] && typeof cached[0] === 'object') {
     const row = cached[0] as Record<string, unknown>
     const imageUrl = typeof row.image_url === 'string' ? row.image_url : null
     const sourceUrl = typeof row.image_source_url === 'string' ? row.image_source_url : null
     const provider = typeof row.image_provider === 'string' ? row.image_provider : null
+    imageQueryFromDb = typeof row.image_query === 'string' ? row.image_query : null
     if (imageUrl && sourceUrl && provider) {
       return json(res, 200, { ok: true, imageUrl, sourceUrl, provider, cached: true })
     }
   }
 
-  const q = clampQuery(prompt)
+  const q = clampQuery(imageQueryFromDb ?? prompt)
   if (!q) return json(res, 200, { ok: true, imageUrl: null })
 
   const candidates: { url: string; width: number; height: number; sourceUrl: string; provider: 'wikimedia' | 'openverse' }[] =

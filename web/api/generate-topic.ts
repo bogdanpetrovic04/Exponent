@@ -97,11 +97,12 @@ export default async function handler(req: Req, res: Res) {
   const prompt = [
     'Generate a brand new topic and 20 numeric Q/A trivia questions.',
     'Return ONLY valid JSON matching this exact schema (no markdown, no extra keys):',
-    '{ "topicName": string, "shortDescription": string, "questions": [ { "prompt": string, "answer": number } ] }',
+    '{ "topicName": string, "shortDescription": string, "questions": [ { "prompt": string, "answer": number, "imageQuery": string } ] }',
     'Constraints:',
     '- topicName: 1-35 chars, shortDescription: 1-35 chars.',
     '- questions length: exactly 20.',
     '- prompt: 1-240 chars, answer must be a number (no units).',
+    '- imageQuery: 1-120 chars; should be relevant for finding a picture, but MUST NOT reveal or hint at the numeric answer (no numbers, no quantities, no “how many”, no units). Prefer a concrete noun phrase, e.g. “red panda”, “Eiffel Tower”, “Japan skyline”, “Saturn planet”.',
     '- Prompts should be diverse and unambiguous.',
     '',
     `User topic request: ${description}`,
@@ -172,14 +173,16 @@ export default async function handler(req: Req, res: Res) {
   if (!shortDescription || shortDescription.length > 35) return json(res, 422, { ok: false, error: 'invalid_short_description' })
   if (!questions || questions.length !== 20) return json(res, 422, { ok: false, error: 'invalid_questions' })
 
-  const cleaned: { prompt: string; answer: number }[] = []
+  const cleaned: { prompt: string; answer: number; imageQuery: string }[] = []
   for (const q of questions) {
     const qr = asRecord(q)
     const pr = typeof qr?.prompt === 'string' ? qr.prompt.trim() : ''
     const ans = typeof qr?.answer === 'number' ? qr.answer : Number(qr?.answer)
+    const iq = typeof qr?.imageQuery === 'string' ? qr.imageQuery.trim() : ''
     if (!pr || pr.length > 240) return json(res, 422, { ok: false, error: 'invalid_prompt' })
     if (!Number.isFinite(ans)) return json(res, 422, { ok: false, error: 'invalid_answer' })
-    cleaned.push({ prompt: pr, answer: ans })
+    if (!iq || iq.length > 120) return json(res, 422, { ok: false, error: 'invalid_image_query' })
+    cleaned.push({ prompt: pr, answer: ans, imageQuery: iq })
   }
 
   const { data: topicId, error: insErr } = await sb.rpc('create_topic_with_questions', {
