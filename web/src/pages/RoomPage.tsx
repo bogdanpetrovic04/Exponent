@@ -343,9 +343,7 @@ function LobbyPhase({
   const topicLabel = (t: TopicRow) => `${t.name} - ${t.short_description}`
   const selectedTopic = topics.find((t) => t.id === topicId) ?? null
   const [autoSaveReady, setAutoSaveReady] = useState(false)
-  const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
-  const [saveAttempts, setSaveAttempts] = useState(0)
 
   useEffect(() => {
     // Avoid firing autosave on first render; we only want user-driven changes.
@@ -355,7 +353,6 @@ function LobbyPhase({
 
   const saveSettings = useCallback(async () => {
     if (!supabase) return false
-    setSaveAttempts((n) => n + 1)
     const { error } = await supabase.rpc('update_room_settings', {
       p_room_id: room.id,
       p_time_mode: tm,
@@ -381,11 +378,9 @@ function LobbyPhase({
       topicMode !== room.topic_mode ||
       topicId !== room.topic_id
     if (!dirty) {
-      setSaving(false)
       return
     }
     const id = window.setTimeout(() => {
-      setSaving(true)
       void (async () => {
         const ok = await saveSettings()
         if (ok) onAfterSave()
@@ -409,12 +404,6 @@ function LobbyPhase({
     room.id,
     saveSettings,
   ])
-
-  useEffect(() => {
-    if (!saving) return
-    const id = window.setTimeout(() => setSaving(false), 1200)
-    return () => window.clearTimeout(id)
-  }, [saving])
 
   return (
     <>
@@ -516,25 +505,15 @@ function LobbyPhase({
               </select>
             ) : null}
 
-            <p style={{ color: 'var(--text)', marginTop: 10, fontSize: '13px' }}>
-              {saving ? 'Saving…' : 'Saved'} · phase: <code>{room.phase}</code> · updated:{' '}
-              <code>{new Date(room.updated_at).toLocaleTimeString()}</code>
-              <br />
-              topics: <code>{topics.length}</code> · room topic: <code>{room.topic_id.slice(0, 8)}</code> · selected:{' '}
-              <code>{topicId.slice(0, 8)}</code>
-              <br />
-              save attempts: <code>{saveAttempts}</code>
-            </p>
-
             {saveError ? (
               <p style={{ color: '#f87171', marginTop: 8, fontSize: '13px' }} role="alert">
-                Save error: {saveError}
+                Could not save settings: {saveError}
               </p>
             ) : null}
 
             {selectedTopic ? (
               <p style={{ color: 'var(--text)', marginTop: 10, fontSize: '14px' }}>
-                Selected: <strong>{topicLabel(selectedTopic)}</strong> <span style={{ opacity: 0.7 }}>({selectedTopic.id.slice(0, 8)})</span>
+                Selected: <strong>{topicLabel(selectedTopic)}</strong>
               </p>
             ) : null}
 
