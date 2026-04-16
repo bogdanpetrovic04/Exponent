@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import { useRoomState } from '../hooks/useRoomState'
@@ -197,16 +197,6 @@ export default function RoomPage() {
           isHost={!!isHost}
           userId={userId!}
           busy={busy}
-          onUpdateSettings={(tm, r, topicMode, topicId, questionSeconds) =>
-            callRpc('update_room_settings', {
-              p_room_id: room.id,
-              p_time_mode: tm,
-              p_rounds: r,
-              p_topic_mode: topicMode,
-              p_topic_id: topicId,
-              p_question_seconds: questionSeconds,
-            })
-          }
           onAfterSave={() => void refresh()}
           onGenerateAiTopic={(desc) => generateAiTopic(desc)}
           onKick={(uid) => void callRpc('kick_player', { p_room_id: room.id, p_target: uid })}
@@ -320,7 +310,6 @@ function LobbyPhase({
   isHost,
   userId,
   busy,
-  onUpdateSettings,
   onAfterSave,
   onGenerateAiTopic,
   onKick,
@@ -333,13 +322,6 @@ function LobbyPhase({
   isHost: boolean
   userId: string
   busy: boolean
-  onUpdateSettings: (
-    tm: GameTimeMode,
-    rounds: number,
-    topicMode: TopicMode,
-    topicId: string,
-    questionSeconds: number,
-  ) => Promise<boolean>
   onAfterSave: () => void
   onGenerateAiTopic: (description: string) => Promise<{ topicId: string; displayName: string } | null>
   onKick: (uid: string) => void
@@ -359,12 +341,33 @@ function LobbyPhase({
   const selectedTopic = topics.find((t) => t.id === topicId) ?? null
   const [autoSaveReady, setAutoSaveReady] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [saveAttempts, setSaveAttempts] = useState(0)
 
   useEffect(() => {
     // Avoid firing autosave on first render; we only want user-driven changes.
     const id = window.setTimeout(() => setAutoSaveReady(true), 0)
     return () => window.clearTimeout(id)
   }, [])
+
+  const saveSettings = useCallback(async () => {
+    if (!supabase) return false
+    setSaveAttempts((n) => n + 1)
+    const { error } = await supabase.rpc('update_room_settings', {
+      p_room_id: room.id,
+      p_time_mode: tm,
+      p_rounds: rounds,
+      p_topic_mode: topicMode,
+      p_topic_id: topicId,
+      p_question_seconds: questionSeconds,
+    })
+    if (error) {
+      setSaveError(error.message)
+      return false
+    }
+    setSaveError(null)
+    return true
+  }, [questionSeconds, room.id, rounds, tm, topicId, topicMode])
 
   useEffect(() => {
     if (!isHost || !autoSaveReady) return
@@ -381,7 +384,7 @@ function LobbyPhase({
     const id = window.setTimeout(() => {
       setSaving(true)
       void (async () => {
-        const ok = await onUpdateSettings(tm, rounds, topicMode, topicId, questionSeconds)
+        const ok = await saveSettings()
         if (ok) onAfterSave()
       })()
     }, 400)
@@ -399,8 +402,9 @@ function LobbyPhase({
     room.question_seconds,
     room.topic_mode,
     room.topic_id,
-    onUpdateSettings,
     onAfterSave,
+    room.id,
+    saveSettings,
   ])
 
   useEffect(() => {
@@ -515,7 +519,15 @@ function LobbyPhase({
               <br />
               topics: <code>{topics.length}</code> · room topic: <code>{room.topic_id.slice(0, 8)}</code> · selected:{' '}
               <code>{topicId.slice(0, 8)}</code>
+              <br />
+              save attempts: <code>{saveAttempts}</code>
             </p>
+
+            {saveError ? (
+              <p style={{ color: '#f87171', marginTop: 8, fontSize: '13px' }} role="alert">
+                Save error: {saveError}
+              </p>
+            ) : null}
 
             {selectedTopic ? (
               <p style={{ color: 'var(--text)', marginTop: 10, fontSize: '14px' }}>
