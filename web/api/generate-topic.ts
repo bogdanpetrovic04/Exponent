@@ -104,7 +104,7 @@ export default async function handler(req: Req, res: Res) {
   ].join('\n')
 
   const url =
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=` +
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=` +
     encodeURIComponent(geminiKey)
 
   let modelText = ''
