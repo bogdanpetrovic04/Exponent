@@ -10,6 +10,9 @@ export default function RoomPage() {
   const navigate = useNavigate()
   const { room, players, scores, guesses, topics, loading, error, tickError, refresh, refreshTopics } =
     useRoomState(roomId)
+  const afterLobbySave = useCallback(() => {
+    void refresh()
+  }, [refresh])
   const [userId, setUserId] = useState<string | null>(null)
   const [prompt, setPrompt] = useState<string | null>(null)
   const [guessInput, setGuessInput] = useState('')
@@ -197,7 +200,7 @@ export default function RoomPage() {
           isHost={!!isHost}
           userId={userId!}
           busy={busy}
-          onAfterSave={() => void refresh()}
+          onAfterSave={afterLobbySave}
           onGenerateAiTopic={(desc) => generateAiTopic(desc)}
           onKick={(uid) => void callRpc('kick_player', { p_room_id: room.id, p_target: uid })}
           onDelete={async () => {
