@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
-import type { GameTimeMode } from '../types/game'
 import './game.css'
 
 function mapJoinError(message: string): string {
@@ -22,8 +21,6 @@ export default function LobbyPage() {
   const navigate = useNavigate()
   const [nickname, setNickname] = useState('')
   const [joinCode, setJoinCode] = useState('')
-  const [rounds, setRounds] = useState(5)
-  const [timeMode, setTimeMode] = useState<GameTimeMode>('total_30')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -46,8 +43,8 @@ export default function LobbyPage() {
     try {
       const { data, error: err } = await supabase.rpc('create_room', {
         p_nickname: nickname.trim() || 'Player',
-        p_time_mode: timeMode,
-        p_rounds: rounds,
+        p_time_mode: 'total_30',
+        p_rounds: 5,
       })
       if (err) {
         const msg = [err.message, 'details' in err ? String((err as { details?: string }).details) : '']
@@ -127,41 +124,11 @@ export default function LobbyPage() {
       </div>
 
       <div className="game-card">
-        <h2 style={{ margin: '0 0 12px', fontSize: '20px' }}>Host a room</h2>
-        <p style={{ marginBottom: 12, color: 'var(--text)', fontSize: '15px' }}>
-          Time:{' '}
-          <label style={{ marginRight: 12 }}>
-            <input
-              type="radio"
-              name="tm"
-              checked={timeMode === 'total_30'}
-              onChange={() => setTimeMode('total_30')}
-            />{' '}
-            30s total
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="tm"
-              checked={timeMode === 'after_first_30'}
-              onChange={() => setTimeMode('after_first_30')}
-            />{' '}
-            30s after first guess
-          </label>
-        </p>
-        <label style={{ display: 'block', marginBottom: 8 }}>Rounds ({rounds})</label>
-        <input
-          type="range"
-          min={3}
-          max={15}
-          value={rounds}
-          onChange={(e) => setRounds(Number(e.target.value))}
-          style={{ width: '100%' }}
-        />
+        <h2 style={{ margin: '0 0 16px', fontSize: '20px' }}>Host a room</h2>
         <button
           type="button"
           className="counter"
-          style={{ marginTop: 16, width: '100%', justifyContent: 'center' }}
+          style={{ width: '100%', justifyContent: 'center' }}
           disabled={busy}
           onClick={handleHost}
         >
