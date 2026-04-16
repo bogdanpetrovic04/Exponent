@@ -58,8 +58,8 @@ export default function LobbyPage() {
       const raw = data as unknown
       const row = Array.isArray(raw) ? raw[0] : raw
       const rid =
-        row && typeof row === 'object' && 'room_id' in row
-          ? String((row as { room_id: string }).room_id)
+        row && typeof row === 'object' && 'res_room_id' in row
+          ? String((row as { res_room_id: string }).res_room_id)
           : undefined
       if (!rid) throw new Error('No room id returned from create_room')
       navigate(`/room/${rid}`)
@@ -86,9 +86,15 @@ export default function LobbyPage() {
         p_nickname: nickname.trim() || 'Player',
       })
       if (err) throw err
-      const row = Array.isArray(data) ? data[0] : data
-      const rid = row?.room_id as string | undefined
-      if (!rid) throw new Error('No room id returned')
+      const rid =
+        typeof data === 'string'
+          ? data
+          : data && typeof data === 'object' && 'res_room_id' in (data as object)
+            ? String((data as { res_room_id: string }).res_room_id)
+            : Array.isArray(data) && data[0] && typeof data[0] === 'object' && 'res_room_id' in (data[0] as object)
+              ? String((data[0] as { res_room_id: string }).res_room_id)
+              : undefined
+      if (!rid) throw new Error('No room id returned from join_room')
       navigate(`/room/${rid}`)
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Could not join'

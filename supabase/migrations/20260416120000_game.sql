@@ -265,13 +265,14 @@ end; $$;
 
 grant execute on function public.room_tick(uuid) to authenticated;
 
--- RPC: create_room
+-- RPC: create_room (output columns must not be named "room_id" — conflicts with table columns in INSERT)
+drop function if exists public.create_room(text, public.game_time_mode, int);
 create or replace function public.create_room(
   p_nickname text,
   p_time_mode public.game_time_mode,
   p_rounds int
 )
-returns table (room_id uuid, code text)
+returns table (res_room_id uuid, res_code text)
 language plpgsql security definer set search_path = public as $$
 declare
   uid uuid := auth.uid();
@@ -306,9 +307,10 @@ end; $$;
 
 grant execute on function public.create_room(text, public.game_time_mode, int) to authenticated;
 
--- join_room
-create or replace function public.join_room(p_code text, p_nickname text)
-returns table (room_id uuid)
+-- join_room (returns uuid so RETURNS TABLE does not define a conflicting "room_id" output variable)
+drop function if exists public.join_room(text, text);
+create function public.join_room(p_code text, p_nickname text)
+returns uuid
 language plpgsql security definer set search_path = public as $$
 declare
   uid uuid := auth.uid();
@@ -328,7 +330,7 @@ begin
     raise exception 'room_not_found_or_unavailable';
   end if;
 
-  if exists (select 1 from public.room_players where room_id = rid and user_id = uid and kicked_at is not null) then
+  if exists (select 1 from public.room_players rp where rp.room_id = rid and rp.user_id = uid and rp.kicked_at is not null) then
     raise exception 'you_were_removed';
   end if;
 
@@ -336,10 +338,7 @@ begin
   values (rid, uid, trim(p_nickname))
   on conflict (room_id, user_id) do update set nickname = excluded.nickname, kicked_at = null;
 
-  return query select rid;
-exception
-  when others then
-    raise;
+  return rid;
 end; $$;
 
 grant execute on function public.join_room(text, text) to authenticated;
