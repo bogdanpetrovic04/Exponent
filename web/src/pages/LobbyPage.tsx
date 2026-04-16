@@ -101,6 +101,21 @@ export default function LobbyPage() {
     }
   }
 
+  async function handleLogout() {
+    if (!supabase) return
+    setBusy(true)
+    setError(null)
+    try {
+      const { error: err } = await supabase.auth.signOut()
+      if (err) throw err
+      navigate('/', { replace: true })
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not log out')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   return (
     <section className="game-layout" id="center">
       <div style={{ textAlign: 'center', marginBottom: 28 }}>
@@ -160,9 +175,15 @@ export default function LobbyPage() {
       ) : null}
 
       <p style={{ textAlign: 'center', marginTop: 24 }}>
-        <a href="/" style={{ color: 'var(--text)' }}>
-          Refresh
-        </a>
+        <button
+          type="button"
+          className="btn-ghost"
+          disabled={busy}
+          onClick={handleLogout}
+          style={{ padding: '10px 14px' }}
+        >
+          Log out
+        </button>
       </p>
     </section>
   )
