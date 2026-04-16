@@ -138,43 +138,20 @@
   text-align: right;
 }
 
+/* Mobile: keep one row per player; allow horizontal scroll if needed. */
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.table-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 @media (max-width: 520px) {
-  .game-table thead {
-    display: none;
-  }
-  .game-table,
-  .game-table tbody,
-  .game-table tr,
-  .game-table td {
-    display: block;
-    width: 100%;
-  }
-  .game-table tr {
-    padding: 10px 0;
-    border-top: 1px solid rgba(148, 163, 184, 0.12);
-  }
-  .game-table td {
-    border-top: none;
-    padding: 4px 0;
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-  }
-  .game-table td::before {
-    content: attr(data-label);
-    color: var(--muted);
-  }
-  .game-table td:nth-child(1)::before {
-    content: '#';
-  }
-  .game-table td:nth-child(2)::before {
-    content: 'Player';
-  }
-  .game-table td:nth-child(3)::before {
-    content: 'Guess';
-  }
-  .game-table td:nth-child(4)::before {
-    content: 'Score';
+  .game-table {
+    min-width: 520px;
   }
 }
 
@@ -183,6 +160,7 @@
   font-size: 14px;
   padding: 10px 12px;
   border-radius: var(--pill);
+  min-height: 44px;
   border: 1px solid rgba(148, 163, 184, 0.16);
   background: rgba(15, 23, 42, 0.35);
   color: var(--text-h);

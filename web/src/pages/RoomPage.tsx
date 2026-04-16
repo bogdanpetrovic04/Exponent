@@ -658,26 +658,28 @@ function RevealPhase({
       <p style={{ color: 'var(--text)', fontSize: '14px', marginBottom: 8 }}>
         Score: 0 = exact answer; no guess = 1; lower is better.
       </p>
-      <table className="game-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Player</th>
-            <th>Guess</th>
-            <th>Score</th>
-          </tr>
-        </thead>
-        <tbody>
-          {roundScores.map((s, i) => (
-            <tr key={s.user_id}>
-              <td data-label="#">{i + 1}</td>
-              <td data-label="Player">{nick(s.user_id)}</td>
-              <td data-label="Guess">{guessOf(s.user_id) ?? '—'}</td>
-              <td data-label="Score">{s.points.toFixed(4)}</td>
+      <div className="table-scroll">
+        <table className="game-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Player</th>
+              <th>Guess</th>
+              <th>Score</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {roundScores.map((s, i) => (
+              <tr key={s.user_id}>
+                <td>{i + 1}</td>
+                <td>{nick(s.user_id)}</td>
+                <td>{guessOf(s.user_id) ?? '—'}</td>
+                <td>{s.points.toFixed(4)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <button
         type="button"
         className="counter"
