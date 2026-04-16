@@ -184,13 +184,14 @@ export default function RoomPage() {
           isHost={!!isHost}
           userId={userId!}
           busy={busy}
-          onUpdateSettings={(tm, r, topicMode, topicId) =>
+          onUpdateSettings={(tm, r, topicMode, topicId, questionSeconds) =>
             void callRpc('update_room_settings', {
               p_room_id: room.id,
               p_time_mode: tm,
               p_rounds: r,
               p_topic_mode: topicMode,
               p_topic_id: topicId,
+              p_question_seconds: questionSeconds,
             })
           }
           onGenerateAiTopic={(desc) => generateAiTopic(desc)}
@@ -286,7 +287,13 @@ function LobbyPhase({
   isHost: boolean
   userId: string
   busy: boolean
-  onUpdateSettings: (tm: GameTimeMode, rounds: number, topicMode: TopicMode, topicId: string) => void
+  onUpdateSettings: (
+    tm: GameTimeMode,
+    rounds: number,
+    topicMode: TopicMode,
+    topicId: string,
+    questionSeconds: number,
+  ) => void
   onGenerateAiTopic: (description: string) => Promise<{ topicId: string; displayName: string } | null>
   onKick: (uid: string) => void
   onDelete: () => void
@@ -294,6 +301,7 @@ function LobbyPhase({
 }) {
   const [tm, setTm] = useState<GameTimeMode>(room.time_mode)
   const [rounds, setRounds] = useState(room.rounds_total)
+  const [questionSeconds, setQuestionSeconds] = useState(room.question_seconds)
   const [topicMode, setTopicMode] = useState<TopicMode>(room.topic_mode)
   const [topicId, setTopicId] = useState(room.topic_id)
   const [aiDescription, setAiDescription] = useState('')
@@ -308,7 +316,10 @@ function LobbyPhase({
         <h2 style={{ marginTop: 0 }}>Room</h2>
         <p style={{ color: 'var(--text)' }}>
           Share the code so others can join. Rounds: {room.rounds_total}. Mode:{' '}
-          {room.time_mode === 'total_30' ? '30s total' : '30s after first guess'}.
+          {room.time_mode === 'total_30'
+            ? `${room.question_seconds}s total`
+            : `${room.question_seconds}s after first guess`}
+          .
         </p>
         {isHost ? (
           <>
@@ -319,7 +330,7 @@ function LobbyPhase({
                   checked={tm === 'total_30'}
                   onChange={() => setTm('total_30')}
                 />{' '}
-                30s total
+                Total time
               </label>
               <label>
                 <input
@@ -327,9 +338,20 @@ function LobbyPhase({
                   checked={tm === 'after_first_30'}
                   onChange={() => setTm('after_first_30')}
                 />{' '}
-                30s after first guess
+                Time after first guess
               </label>
             </div>
+
+            <label style={{ display: 'block', marginTop: 12 }}>Round length ({questionSeconds}s)</label>
+            <input
+              type="range"
+              min={10}
+              max={90}
+              value={questionSeconds}
+              onChange={(e) => setQuestionSeconds(Number(e.target.value))}
+              style={{ width: '100%' }}
+            />
+
             <label style={{ display: 'block', marginTop: 12 }}>Rounds ({rounds})</label>
             <input
               type="range"
@@ -409,7 +431,7 @@ function LobbyPhase({
                         if (!res) return
                         setTopicMode('ai_custom')
                         setTopicId(res.topicId)
-                        onUpdateSettings(tm, rounds, 'ai_custom', res.topicId)
+                        onUpdateSettings(tm, rounds, 'ai_custom', res.topicId, questionSeconds)
                         setAiDescription('')
                       } finally {
                         setAiBusy(false)
@@ -427,7 +449,7 @@ function LobbyPhase({
               className="btn-ghost"
               style={{ marginTop: 12 }}
               disabled={busy}
-              onClick={() => onUpdateSettings(tm, rounds, topicMode, topicId)}
+              onClick={() => onUpdateSettings(tm, rounds, topicMode, topicId, questionSeconds)}
             >
               Save settings
             </button>

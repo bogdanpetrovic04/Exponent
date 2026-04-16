@@ -19,6 +19,7 @@ export type RoomRow = {
   time_mode: GameTimeMode
   topic_mode: TopicMode
   topic_id: string
+  question_seconds: number
   rounds_total: number
   current_round: number
   current_question_id: string | null

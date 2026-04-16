@@ -6,6 +6,10 @@ type Res = {
 }
 type JsonRecord = Record<string, unknown>
 
+declare const process: {
+  env: Record<string, string | undefined>
+}
+
 function json(res: Res, code: number, body: Record<string, unknown>) {
   res.status(code).json(body)
 }
@@ -95,7 +99,7 @@ export default async function handler(req: Req, res: Res) {
     'Return ONLY valid JSON matching this exact schema (no markdown, no extra keys):',
     '{ "topicName": string, "shortDescription": string, "questions": [ { "prompt": string, "answer": number } ] }',
     'Constraints:',
-    '- topicName: 1-64 chars, shortDescription: 1-96 chars.',
+    '- topicName: 1-35 chars, shortDescription: 1-35 chars.',
     '- questions length: exactly 20.',
     '- prompt: 1-240 chars, answer must be a number (no units).',
     '- Prompts should be diverse and unambiguous.',
@@ -123,7 +127,8 @@ export default async function handler(req: Req, res: Res) {
       const raw: unknown = await r.json().catch(() => null)
       if (!r.ok) {
         const err = asRecord(raw)?.error
-        const msg = typeof asRecord(err)?.message === 'string' ? asRecord(err)?.message : null
+      const m = asRecord(err)?.message
+      const msg = typeof m === 'string' ? m : null
         return { ok: false, status: r.status, message: msg }
       }
       const text = extractGeminiText(raw)
@@ -163,8 +168,8 @@ export default async function handler(req: Req, res: Res) {
   const shortDescription = typeof p?.shortDescription === 'string' ? p.shortDescription.trim() : ''
   const questions = Array.isArray(p?.questions) ? p.questions : null
 
-  if (!topicName || topicName.length > 64) return json(res, 422, { ok: false, error: 'invalid_topic_name' })
-  if (!shortDescription || shortDescription.length > 96) return json(res, 422, { ok: false, error: 'invalid_short_description' })
+  if (!topicName || topicName.length > 35) return json(res, 422, { ok: false, error: 'invalid_topic_name' })
+  if (!shortDescription || shortDescription.length > 35) return json(res, 422, { ok: false, error: 'invalid_short_description' })
   if (!questions || questions.length !== 20) return json(res, 422, { ok: false, error: 'invalid_questions' })
 
   const cleaned: { prompt: string; answer: number }[] = []
