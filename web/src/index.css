@@ -73,6 +73,8 @@ button {
   min-height: 100svh;
   display: flex;
   flex-direction: column;
+  padding-top: max(env(safe-area-inset-top), constant(safe-area-inset-top));
+  padding-bottom: max(env(safe-area-inset-bottom), constant(safe-area-inset-bottom));
   background:
     radial-gradient(1100px 700px at 18% 8%, rgba(34, 211, 238, 0.10), transparent 58%),
     radial-gradient(1100px 700px at 82% 0%, rgba(56, 189, 248, 0.06), transparent 55%),

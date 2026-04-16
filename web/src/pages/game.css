@@ -2,7 +2,10 @@
   width: 100%;
   max-width: 760px;
   margin: 0 auto;
-  padding: calc(18px + env(safe-area-inset-top)) 16px calc(36px + env(safe-area-inset-bottom));
+  padding:
+    calc(18px + max(env(safe-area-inset-top), constant(safe-area-inset-top)))
+    16px
+    calc(36px + max(env(safe-area-inset-bottom), constant(safe-area-inset-bottom)));
   text-align: left;
 }
 
