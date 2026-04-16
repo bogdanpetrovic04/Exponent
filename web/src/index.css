@@ -50,6 +50,12 @@
   }
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 #root {
   width: 1126px;
   max-width: 100%;
@@ -59,11 +65,12 @@
   min-height: 100svh;
   display: flex;
   flex-direction: column;
-  box-sizing: border-box;
 }
 
 body {
   margin: 0;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 @media (max-width: 640px) {

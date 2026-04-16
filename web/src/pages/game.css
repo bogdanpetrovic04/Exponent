@@ -20,6 +20,12 @@
   letter-spacing: 0.2em;
   font-weight: 600;
   color: var(--text-h);
+  display: inline-block;
+  max-width: 100%;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .game-row {
