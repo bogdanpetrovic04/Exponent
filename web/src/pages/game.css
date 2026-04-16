@@ -321,4 +321,9 @@
   .btn-ghost {
     padding: 10px 12px;
   }
+
+  /* Prevent iOS Safari input-focus zoom (needs >= 16px) */
+  .game-input {
+    font-size: 16px;
+  }
 }

@@ -86,6 +86,7 @@ body {
   width: 100%;
   overflow-x: hidden;
   background: var(--bg);
+  overscroll-behavior: none;
 }
 
 @media (max-width: 640px) {

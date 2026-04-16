@@ -185,6 +185,10 @@ export default function LobbyPage() {
           Log out
         </button>
       </p>
+
+      <p style={{ textAlign: 'center', marginTop: 18, color: 'var(--muted)', fontSize: 13 }}>
+        © {new Date().getFullYear()} Bogdan Petrovic
+      </p>
     </section>
   )
 }
