@@ -14,9 +14,9 @@ npm run dev
 
 1. Create a Supabase project.
 
-2. In **SQL Editor**, run the migration file:
+2. In **SQL Editor**, run [`supabase/migrations/20260416120000_game.sql`](supabase/migrations/20260416120000_game.sql) (includes RLS-safe RPC settings and a `SECURITY DEFINER` `_pick_question`).
 
-   [`supabase/migrations/20260416120000_game.sql`](supabase/migrations/20260416120000_game.sql)
+   If you deployed an **older** version of this file before those fixes, re-run **only** the block at the bottom of the current file from `-- RLS: RPCs run as invoker` through the last `alter function ... set row_security to off;`, or run the whole file again (use `create or replace` / `drop policy if exists` where applicable).
 
    It creates tables (`questions`, `rooms`, `room_players`, `round_guesses`, `round_scores`, …), **RLS**, **RPCs** (`create_room`, `join_room`, `start_game`, `room_tick`, …), seeds sample **questions**, and attaches tables to the **`supabase_realtime`** publication.
 
@@ -52,6 +52,8 @@ The app talks to Supabase **directly** from the browser (authenticated user JWT)
 - **Root Directory**: `web`
 - **Build**: `npm run build`
 - **Output**: `dist`
+- **Node**: Use **20.x** or newer (see `web/.nvmrc` and `engines` in `web/package.json`). `react-router-dom` v7 requires Node ≥ 20.
+- Commit **`web/package.json`** and **`web/package-lock.json`** together after `npm install` so Vercel installs `react-router-dom`. If the build says it cannot find `react-router-dom`, your deployed branch is missing those files or an outdated lockfile.
 
 Optional: [`web/api/health.ts`](web/api/health.ts) remains as a simple Vercel health check (no Supabase).
 

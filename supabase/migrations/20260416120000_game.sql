@@ -107,9 +107,13 @@ returns boolean language sql stable as $$
   );
 $$;
 
--- Pick random unused question
+-- Pick random unused question (must bypass questions RLS: policy is deny-all for clients)
 create or replace function public._pick_question(p_room_id uuid)
-returns uuid language plpgsql as $$
+returns uuid language plpgsql
+security definer
+set search_path = public
+set row_security = off
+as $$
 declare qid uuid;
 begin
   select q.id into qid
@@ -541,6 +545,22 @@ exception when duplicate_object then null; end $$;
 do $$ begin
   alter publication supabase_realtime add table public.round_scores;
 exception when duplicate_object then null; end $$;
+
+-- RLS: RPCs run as invoker unless row_security is off; inserts into rooms were blocked for many setups.
+alter function public.create_room(text, public.game_time_mode, int) set row_security to off;
+alter function public.join_room(text, text) set row_security to off;
+alter function public.update_room_settings(uuid, public.game_time_mode, int) set row_security to off;
+alter function public.kick_player(uuid, uuid) set row_security to off;
+alter function public.delete_room(uuid) set row_security to off;
+alter function public.start_game(uuid) set row_security to off;
+alter function public.submit_guess(uuid, double precision) set row_security to off;
+alter function public.set_ready(uuid) set row_security to off;
+alter function public.host_back_to_lobby(uuid) set row_security to off;
+alter function public.get_question_prompt(uuid) set row_security to off;
+alter function public.room_tick(uuid) set row_security to off;
+alter function public._score_round(uuid, int) set row_security to off;
+alter function public._enter_reveal(uuid) set row_security to off;
+alter function public._start_question(uuid) set row_security to off;
 
 -- Seed sample questions (idempotent-ish: only if empty)
 insert into public.questions (prompt, answer)
