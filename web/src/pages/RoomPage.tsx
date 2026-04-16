@@ -370,7 +370,7 @@ function RevealPhase({
     guesses.find((g) => g.round_index === room.current_round && g.user_id === uid)?.guess
   const roundScores = scores
     .filter((s) => s.round_index === room.current_round)
-    .sort((a, b) => b.points - a.points)
+    .sort((a, b) => a.points - b.points)
 
   return (
     <div className="game-card">
@@ -381,13 +381,16 @@ function RevealPhase({
       <p className="game-timer" style={{ marginBottom: 12 }}>
         Next in {revealSecondsLeft ?? 0}s (or when everyone is ready)
       </p>
+      <p style={{ color: 'var(--text)', fontSize: '14px', marginBottom: 8 }}>
+        Score: 0 = exact answer; no guess = 1; lower is better.
+      </p>
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '15px' }}>
         <thead>
           <tr>
             <th style={{ textAlign: 'left', padding: '6px 0' }}>#</th>
             <th style={{ textAlign: 'left' }}>Player</th>
             <th style={{ textAlign: 'right' }}>Guess</th>
-            <th style={{ textAlign: 'right' }}>Points</th>
+            <th style={{ textAlign: 'right' }}>Score</th>
           </tr>
         </thead>
         <tbody>
@@ -432,15 +435,18 @@ function FinalPhase({
   for (const s of scores) {
     totals.set(s.user_id, (totals.get(s.user_id) ?? 0) + s.points)
   }
-  const rows = [...totals.entries()].sort((a, b) => b[1] - a[1])
+  const rows = [...totals.entries()].sort((a, b) => a[1] - b[1])
 
   return (
     <div className="game-card">
-      <h2 style={{ marginTop: 0 }}>Final scores</h2>
+      <h2 style={{ marginTop: 0 }}>Final standings</h2>
+      <p style={{ color: 'var(--text)', fontSize: '14px', marginBottom: 12 }}>
+        Total score (sum of per-round scores); lower is better. No guess in a round counts as 1.
+      </p>
       <ol style={{ paddingLeft: 20, margin: 0 }}>
         {rows.map(([uid, pt]) => (
           <li key={uid} style={{ marginBottom: 8 }}>
-            <strong>{nick(uid)}</strong> — {pt.toFixed(4)} pts
+            <strong>{nick(uid)}</strong> — {pt.toFixed(4)}
           </li>
         ))}
       </ol>
