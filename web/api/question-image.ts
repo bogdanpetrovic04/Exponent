@@ -29,24 +29,28 @@ function parseBearer(req: Req): string | null {
   return m?.[1]?.trim() || null
 }
 
-function clampQuery(prompt: string): string {
-  return prompt.trim().slice(0, 180)
+function clampQuery(s: string): string {
+  return s.trim().slice(0, 180)
 }
 
-function pickBestImage(
-  candidates: { url: string; width: number; height: number; sourceUrl: string; provider: 'wikimedia' | 'openverse' }[],
-): { url: string; sourceUrl: string; provider: 'wikimedia' | 'openverse' } | null {
+type ImgCand = { url: string; width: number; height: number; sourceUrl: string; provider: 'wikimedia' | 'openverse' }
+
+function pickBest(
+  candidates: ImgCand[],
+  minWidth: number,
+  minRatio: number,
+  maxRatio: number,
+): ImgCand | null {
   const ok = candidates.filter((c) => {
     if (!c.url || !c.sourceUrl) return false
     if (!Number.isFinite(c.width) || !Number.isFinite(c.height)) return false
-    if (c.width < 900) return false
+    if (c.width < minWidth) return false
     const ratio = c.width / Math.max(1, c.height)
-    if (ratio < 0.7 || ratio > 2.2) return false
+    if (ratio < minRatio || ratio > maxRatio) return false
     return true
   })
   ok.sort((a, b) => b.width * b.height - a.width * a.height)
-  const best = ok[0]
-  return best ? { url: best.url, sourceUrl: best.sourceUrl, provider: best.provider } : null
+  return ok[0] ?? null
 }
 
 async function wikipediaSearchTitle(query: string): Promise<string | null> {
@@ -70,9 +74,7 @@ async function wikipediaSearchTitle(query: string): Promise<string | null> {
   return title?.trim() || null
 }
 
-async function wikipediaSummaryImage(title: string): Promise<
-  { url: string; width: number; height: number; sourceUrl: string; provider: 'wikimedia' } | null
-> {
+async function wikipediaSummaryImage(title: string): Promise<ImgCand | null> {
   const url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(title)}`
   const r = await fetch(url, { headers: { accept: 'application/json' } })
   if (!r.ok) return null
@@ -93,30 +95,34 @@ async function wikipediaSummaryImage(title: string): Promise<
   return { url: imgUrl, width: w, height: h, sourceUrl: pageUrl, provider: 'wikimedia' }
 }
 
-async function openverseImage(query: string): Promise<
-  { url: string; width: number; height: number; sourceUrl: string; provider: 'openverse' } | null
-> {
+async function openverseCollect(query: string): Promise<ImgCand[]> {
   const u = new URL('https://api.openverse.engineering/v1/images')
   u.searchParams.set('q', query)
-  u.searchParams.set('page_size', '10')
+  u.searchParams.set('page_size', '20')
   u.searchParams.set('mature', 'false')
 
   const r = await fetch(u.toString(), { headers: { accept: 'application/json' } })
-  if (!r.ok) return null
+  if (!r.ok) return []
   const raw: unknown = await r.json().catch(() => null)
   const root = asRecord(raw)
   const results = root?.results
-  if (!Array.isArray(results) || results.length < 1) return null
+  if (!Array.isArray(results)) return []
 
+  const out: ImgCand[] = []
   for (const item of results) {
     const it = asRecord(item)
     const imgUrl = typeof it?.url === 'string' ? it.url : null
     const landing = typeof it?.foreign_landing_url === 'string' ? it.foreign_landing_url : null
-    const w = typeof it?.width === 'number' ? it.width : 0
-    const h = typeof it?.height === 'number' ? it.height : 0
-    if (imgUrl && landing) return { url: imgUrl, width: w, height: h, sourceUrl: landing, provider: 'openverse' }
+    if (!imgUrl || !landing) continue
+    let w = typeof it?.width === 'number' ? it.width : 0
+    let h = typeof it?.height === 'number' ? it.height : 0
+    if (!w || !h) {
+      w = 1200
+      h = 900
+    }
+    out.push({ url: imgUrl, width: w, height: h, sourceUrl: landing, provider: 'openverse' })
   }
-  return null
+  return out
 }
 
 export default async function handler(req: Req, res: Res) {
@@ -142,55 +148,81 @@ export default async function handler(req: Req, res: Res) {
   const prompt = typeof body.prompt === 'string' ? body.prompt : ''
   if (!questionId) return json(res, 400, { ok: false, error: 'missing_question_id' })
 
-  // Cache check (SECURITY DEFINER RPC bypasses questions RLS)
-  const { data: cached, error: cErr } = await sb.rpc('get_question_image', { p_question_id: questionId })
   let imageQueryFromDb: string | null = null
+  let imageQueryStockFromDb: string | null = null
+
+  const { data: cached, error: cErr } = await sb.rpc('get_question_image', { p_question_id: questionId })
   if (!cErr && Array.isArray(cached) && cached[0] && typeof cached[0] === 'object') {
     const row = cached[0] as Record<string, unknown>
     const imageUrl = typeof row.image_url === 'string' ? row.image_url : null
     const sourceUrl = typeof row.image_source_url === 'string' ? row.image_source_url : null
     const provider = typeof row.image_provider === 'string' ? row.image_provider : null
     imageQueryFromDb = typeof row.image_query === 'string' ? row.image_query : null
+    imageQueryStockFromDb = typeof row.image_query_stock === 'string' ? row.image_query_stock : null
     if (imageUrl && sourceUrl && provider) {
       return json(res, 200, { ok: true, imageUrl, sourceUrl, provider, cached: true })
     }
   }
 
-  const q = clampQuery(imageQueryFromDb ?? prompt)
-  if (!q) return json(res, 200, { ok: true, imageUrl: null })
+  const factualQ = clampQuery(imageQueryFromDb ?? prompt)
+  const stockQ = clampQuery(imageQueryStockFromDb ?? imageQueryFromDb ?? prompt)
+  if (!factualQ && !stockQ) return json(res, 200, { ok: true, imageUrl: null })
 
-  const candidates: { url: string; width: number; height: number; sourceUrl: string; provider: 'wikimedia' | 'openverse' }[] =
-    []
-
-  // Provider 1: Wikipedia/Wikimedia
-  try {
-    const title = await wikipediaSearchTitle(q)
-    if (title) {
-      const img = await wikipediaSummaryImage(title)
-      if (img) candidates.push(img)
+  // Tier 1: Wikipedia / Wikimedia (factual query)
+  const wiki: ImgCand[] = []
+  if (factualQ) {
+    try {
+      const title = await wikipediaSearchTitle(factualQ)
+      if (title) {
+        const img = await wikipediaSummaryImage(title)
+        if (img) wiki.push(img)
+      }
+    } catch {
+      // ignore
     }
-  } catch {
-    // ignore
+  }
+  const wikiBest = pickBest(wiki, 900, 0.7, 2.2)
+  if (wikiBest) {
+    await sb.rpc('set_question_image', {
+      p_question_id: questionId,
+      p_image_url: wikiBest.url,
+      p_image_source_url: wikiBest.sourceUrl,
+      p_image_provider: wikiBest.provider,
+    })
+    return json(res, 200, {
+      ok: true,
+      imageUrl: wikiBest.url,
+      sourceUrl: wikiBest.sourceUrl,
+      provider: wikiBest.provider,
+      cached: false,
+    })
   }
 
-  // Provider 2: Openverse (free stock-like fallback)
-  try {
-    const ov = await openverseImage(q)
-    if (ov) candidates.push(ov)
-  } catch {
-    // ignore
+  // Tier 2: Openverse (simple / stock query; relaxed size gates)
+  let stock: ImgCand[] = []
+  if (stockQ) {
+    try {
+      stock = await openverseCollect(stockQ)
+    } catch {
+      stock = []
+    }
+  }
+  const stockBest = pickBest(stock, 640, 0.55, 2.45)
+  if (stockBest) {
+    await sb.rpc('set_question_image', {
+      p_question_id: questionId,
+      p_image_url: stockBest.url,
+      p_image_source_url: stockBest.sourceUrl,
+      p_image_provider: stockBest.provider,
+    })
+    return json(res, 200, {
+      ok: true,
+      imageUrl: stockBest.url,
+      sourceUrl: stockBest.sourceUrl,
+      provider: stockBest.provider,
+      cached: false,
+    })
   }
 
-  const best = pickBestImage(candidates)
-  if (!best) return json(res, 200, { ok: true, imageUrl: null })
-
-  await sb.rpc('set_question_image', {
-    p_question_id: questionId,
-    p_image_url: best.url,
-    p_image_source_url: best.sourceUrl,
-    p_image_provider: best.provider,
-  })
-
-  return json(res, 200, { ok: true, imageUrl: best.url, sourceUrl: best.sourceUrl, provider: best.provider, cached: false })
+  return json(res, 200, { ok: true, imageUrl: null })
 }
-

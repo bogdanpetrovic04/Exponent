@@ -387,13 +387,15 @@ $$;
 grant execute on function public.join_room(text, text) to authenticated;
 
 -- RPC: update_room_settings (lobby only)
+drop function if exists public.update_room_settings(uuid, public.game_time_mode, int, public.topic_mode, uuid, int);
 create or replace function public.update_room_settings(
   p_room_id uuid,
   p_time_mode public.game_time_mode,
   p_rounds int,
   p_topic_mode public.topic_mode,
   p_topic_id uuid,
-  p_question_seconds int
+  p_question_seconds int,
+  p_show_question_images boolean
 )
 returns void
 language plpgsql
@@ -420,12 +422,13 @@ begin
     rounds_total = p_rounds,
     topic_mode = p_topic_mode,
     topic_id = case when p_topic_mode = 'random' then topic_id else p_topic_id end,
-    question_seconds = p_question_seconds
+    question_seconds = p_question_seconds,
+    show_question_images = p_show_question_images
   where id = p_room_id and phase = 'lobby' and deleted_at is null;
 end;
 $$;
 
-grant execute on function public.update_room_settings(uuid, public.game_time_mode, int, public.topic_mode, uuid, int) to authenticated;
+grant execute on function public.update_room_settings(uuid, public.game_time_mode, int, public.topic_mode, uuid, int, boolean) to authenticated;
 
 -- RPC: kick_player
 create or replace function public.kick_player(p_room_id uuid, p_target uuid)
@@ -632,6 +635,7 @@ declare
   pr text;
   ans double precision;
   iq text;
+  iqs text;
 begin
   if uid is null then raise exception 'not authenticated'; end if;
   if p_name is null or char_length(trim(p_name)) < 1 or char_length(trim(p_name)) > 64 then
@@ -660,13 +664,17 @@ begin
     if iq is not null and char_length(iq) > 120 then
       raise exception 'invalid_image_query';
     end if;
+    iqs := nullif(trim(item->>'imageQueryStock'), '');
+    if iqs is not null and char_length(iqs) > 120 then
+      raise exception 'invalid_image_query_stock';
+    end if;
     begin
       ans := (item->>'answer')::double precision;
     exception when others then
       raise exception 'invalid_answer';
     end;
-    insert into public.questions (prompt, answer, topic_id, image_query)
-    values (pr, ans, tid, iq);
+    insert into public.questions (prompt, answer, topic_id, image_query, image_query_stock)
+    values (pr, ans, tid, iq, iqs);
   end loop;
 
   return tid;
@@ -676,7 +684,7 @@ $$;
 -- Question images (cached on questions; answers remain hidden by RLS)
 drop function if exists public.get_question_image(uuid);
 create or replace function public.get_question_image(p_question_id uuid)
-returns table (image_url text, image_source_url text, image_provider text, image_query text)
+returns table (image_url text, image_source_url text, image_provider text, image_query text, image_query_stock text)
 language plpgsql
 security definer
 set search_path = public
@@ -688,7 +696,7 @@ begin
   end if;
 
   return query
-  select q.image_url, q.image_source_url, q.image_provider, q.image_query
+  select q.image_url, q.image_source_url, q.image_provider, q.image_query, q.image_query_stock
   from public.questions q
   where q.id = p_question_id
   limit 1;
@@ -722,6 +730,9 @@ begin
 end;
 $$;
 
+grant execute on function public.get_question_image(uuid) to authenticated;
+grant execute on function public.set_question_image(uuid, text, text, text) to authenticated;
+
 grant execute on function public.create_topic_with_questions(text, text, jsonb) to authenticated;
 
 -- Ensure these functions bypass RLS when called via RPC
@@ -732,7 +743,7 @@ alter function public._enter_reveal(uuid) set row_security to off;
 alter function public._start_question(uuid) set row_security to off;
 alter function public.create_room(text, public.game_time_mode, int) set row_security to off;
 alter function public.join_room(text, text) set row_security to off;
-alter function public.update_room_settings(uuid, public.game_time_mode, int, public.topic_mode, uuid, int) set row_security to off;
+alter function public.update_room_settings(uuid, public.game_time_mode, int, public.topic_mode, uuid, int, boolean) set row_security to off;
 alter function public.kick_player(uuid, uuid) set row_security to off;
 alter function public.delete_room(uuid) set row_security to off;
 alter function public.start_game(uuid) set row_security to off;
@@ -741,6 +752,8 @@ alter function public.set_ready(uuid) set row_security to off;
 alter function public.host_back_to_lobby(uuid) set row_security to off;
 alter function public.get_question_prompt(uuid) set row_security to off;
 alter function public.create_topic_with_questions(text, text, jsonb) set row_security to off;
+alter function public.get_question_image(uuid) set row_security to off;
+alter function public.set_question_image(uuid, text, text, text) set row_security to off;
 alter function public._is_room_member(uuid, uuid) set row_security to off;
 alter function public._is_host(uuid, uuid) set row_security to off;
 alter function public._all_players_ready(uuid) set row_security to off;

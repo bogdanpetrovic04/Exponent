@@ -36,6 +36,7 @@ create table if not exists public.questions (
   answer double precision not null,
   topic_id uuid references public.topics (id),
   image_query text,
+  image_query_stock text,
   image_url text,
   image_source_url text,
   image_provider text check (image_provider in ('wikimedia', 'openverse'))
@@ -51,6 +52,7 @@ create table if not exists public.rooms (
   phase public.game_phase not null default 'lobby',
   time_mode public.game_time_mode not null default 'total_30',
   question_seconds int not null default 30 check (question_seconds between 10 and 90),
+  show_question_images boolean not null default true,
   topic_mode public.topic_mode not null default 'preset',
   topic_id uuid references public.topics (id),
   rounds_total int not null default 5 check (rounds_total >= 3 and rounds_total <= 15),

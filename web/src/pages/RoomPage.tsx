@@ -59,16 +59,25 @@ export default function RoomPage() {
       setQuestionImageLoading(false)
       return
     }
+    if (room.show_question_images === false) {
+      setQuestionImage(null)
+      setQuestionImageLoading(false)
+    }
     void supabase.rpc('get_question_prompt', { p_room_id: room.id }).then(({ data, error: err }) => {
       if (!err && typeof data === 'string') setPrompt(data)
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only refetch prompt when question identity changes
-  }, [room?.id, room?.phase, room?.current_question_id])
+  }, [room?.id, room?.phase, room?.current_question_id, room?.show_question_images])
 
   const questionId = room?.current_question_id ?? null
   const phase = room?.phase ?? null
   useEffect(() => {
     if (!supabase || phase !== 'question' || !questionId) return
+    if (room?.show_question_images === false) {
+      setQuestionImage(null)
+      setQuestionImageLoading(false)
+      return
+    }
     const p = (prompt ?? '').trim()
     if (!p) return
 
@@ -99,7 +108,7 @@ export default function RoomPage() {
         setQuestionImageLoading(false)
       }
     })()
-  }, [prompt, phase, questionId])
+  }, [prompt, phase, questionId, room?.show_question_images])
 
   const isHost = userId && room && userId === room.host_id
   const me = players.find((p) => p.user_id === userId && !p.kicked_at)
@@ -259,7 +268,7 @@ export default function RoomPage() {
 
       {room.phase === 'lobby' && (
         <LobbyPhase
-          key={`${room.time_mode}-${room.rounds_total}-${room.topic_mode}-${room.topic_id}-${room.updated_at}`}
+          key={`${room.time_mode}-${room.rounds_total}-${room.topic_mode}-${room.topic_id}-${room.show_question_images}-${room.updated_at}`}
           room={room}
           players={players}
           topics={topics}
@@ -286,8 +295,10 @@ export default function RoomPage() {
           {prompt ? (
             <>
               <h2 style={{ margin: '0 0 12px', fontSize: '22px' }}>{prompt}</h2>
-              {questionImageLoading ? <div className="question-media question-media-skeleton" /> : null}
-              {questionImage ? (
+              {room.show_question_images !== false && questionImageLoading ? (
+                <div className="question-media question-media-skeleton" />
+              ) : null}
+              {room.show_question_images !== false && questionImage ? (
                 <div className="question-media" aria-label="Question image">
                   <img src={questionImage.imageUrl} alt="" loading="lazy" decoding="async" />
                   <a
@@ -436,6 +447,8 @@ function LobbyPhase({
   const [questionSeconds, setQuestionSeconds] = useState(room.question_seconds)
   const [topicMode, setTopicMode] = useState<TopicMode>(room.topic_mode)
   const [topicId, setTopicId] = useState(room.topic_id)
+  const roomShowImagesDef = room.show_question_images !== false
+  const [showImages, setShowImages] = useState(roomShowImagesDef)
   const [aiDescription, setAiDescription] = useState('')
   const [aiBusy, setAiBusy] = useState(false)
 
@@ -461,6 +474,7 @@ function LobbyPhase({
       p_topic_mode: topicMode,
       p_topic_id: topicId,
       p_question_seconds: questionSeconds,
+      p_show_question_images: showImages,
     })
     if (error) {
       setSaveError(error.message)
@@ -468,7 +482,7 @@ function LobbyPhase({
     }
     setSaveError(null)
     return true
-  }, [questionSeconds, room.id, rounds, tm, topicId, topicMode])
+  }, [questionSeconds, room.id, rounds, showImages, tm, topicId, topicMode])
 
   useEffect(() => {
     if (!isHost || !autoSaveReady) return
@@ -477,7 +491,8 @@ function LobbyPhase({
       rounds !== room.rounds_total ||
       questionSeconds !== room.question_seconds ||
       topicMode !== room.topic_mode ||
-      topicId !== room.topic_id
+      topicId !== room.topic_id ||
+      showImages !== roomShowImagesDef
     if (!dirty) {
       return
     }
@@ -496,6 +511,8 @@ function LobbyPhase({
     topicMode,
     topicId,
     questionSeconds,
+    showImages,
+    roomShowImagesDef,
     room.time_mode,
     room.rounds_total,
     room.question_seconds,
@@ -520,6 +537,11 @@ function LobbyPhase({
         {roomTopic ? (
           <p style={{ color: 'var(--text)', marginTop: 8 }}>
             Topic: <strong>{topicLabel(roomTopic)}</strong>
+          </p>
+        ) : null}
+        {!isHost ? (
+          <p style={{ color: 'var(--text)', marginTop: 8, fontSize: 14 }}>
+            Question images: <strong>{room.show_question_images !== false ? 'On' : 'Off'}</strong>
           </p>
         ) : null}
         {isHost ? (
@@ -564,6 +586,26 @@ function LobbyPhase({
               onChange={(e) => setRounds(Number(e.target.value))}
               style={{ width: '100%' }}
             />
+
+            <label style={{ display: 'block', marginTop: 16, marginBottom: 8 }}>Question images</label>
+            <div className="toggle-group" role="group" aria-label="Question images">
+              <button
+                type="button"
+                className="toggle-btn"
+                aria-pressed={showImages}
+                onClick={() => setShowImages(true)}
+              >
+                On
+              </button>
+              <button
+                type="button"
+                className="toggle-btn"
+                aria-pressed={!showImages}
+                onClick={() => setShowImages(false)}
+              >
+                Off
+              </button>
+            </div>
 
             <label style={{ display: 'block', marginTop: 16, marginBottom: 8 }}>Topic</label>
             <div className="toggle-group" role="group" aria-label="Topic mode">
