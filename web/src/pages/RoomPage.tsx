@@ -8,7 +8,7 @@ import './game.css'
 export default function RoomPage() {
   const { roomId } = useParams<{ roomId: string }>()
   const navigate = useNavigate()
-  const { room, players, scores, guesses, topics, loading, error, tickError, refreshTopics } =
+  const { room, players, scores, guesses, topics, loading, error, tickError, refresh, refreshTopics } =
     useRoomState(roomId)
   const [userId, setUserId] = useState<string | null>(null)
   const [prompt, setPrompt] = useState<string | null>(null)
@@ -198,7 +198,7 @@ export default function RoomPage() {
           userId={userId!}
           busy={busy}
           onUpdateSettings={(tm, r, topicMode, topicId, questionSeconds) =>
-            void callRpc('update_room_settings', {
+            callRpc('update_room_settings', {
               p_room_id: room.id,
               p_time_mode: tm,
               p_rounds: r,
@@ -207,6 +207,7 @@ export default function RoomPage() {
               p_question_seconds: questionSeconds,
             })
           }
+          onAfterSave={() => void refresh()}
           onGenerateAiTopic={(desc) => generateAiTopic(desc)}
           onKick={(uid) => void callRpc('kick_player', { p_room_id: room.id, p_target: uid })}
           onDelete={async () => {
@@ -320,6 +321,7 @@ function LobbyPhase({
   userId,
   busy,
   onUpdateSettings,
+  onAfterSave,
   onGenerateAiTopic,
   onKick,
   onDelete,
@@ -337,7 +339,8 @@ function LobbyPhase({
     topicMode: TopicMode,
     topicId: string,
     questionSeconds: number,
-  ) => void
+  ) => Promise<boolean>
+  onAfterSave: () => void
   onGenerateAiTopic: (description: string) => Promise<{ topicId: string; displayName: string } | null>
   onKick: (uid: string) => void
   onDelete: () => void
@@ -377,7 +380,10 @@ function LobbyPhase({
     }
     const id = window.setTimeout(() => {
       setSaving(true)
-      onUpdateSettings(tm, rounds, topicMode, topicId, questionSeconds)
+      void (async () => {
+        const ok = await onUpdateSettings(tm, rounds, topicMode, topicId, questionSeconds)
+        if (ok) onAfterSave()
+      })()
     }, 400)
     return () => window.clearTimeout(id)
   }, [
@@ -394,6 +400,7 @@ function LobbyPhase({
     room.topic_mode,
     room.topic_id,
     onUpdateSettings,
+    onAfterSave,
   ])
 
   useEffect(() => {
