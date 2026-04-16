@@ -75,6 +75,60 @@
   animation: shimmerMove 1400ms ease-in-out infinite;
 }
 
+.question-media {
+  position: relative;
+  width: 100%;
+  margin: 10px 0 14px;
+  border-radius: var(--r2);
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(10, 14, 22, 0.60);
+  aspect-ratio: 16 / 9;
+  box-shadow: var(--shadow-1);
+}
+
+.question-media img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.question-media-info {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--pill);
+  border: 1px solid rgba(148, 163, 184, 0.20);
+  background: rgba(2, 6, 23, 0.45);
+  color: rgba(248, 250, 252, 0.86);
+  text-decoration: none;
+  backdrop-filter: blur(10px);
+}
+
+.question-media-info:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.question-media-skeleton {
+  background: rgba(148, 163, 184, 0.08);
+  border: 1px solid rgba(148, 163, 184, 0.10);
+}
+
+.question-media-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(34, 211, 238, 0.12), transparent);
+  opacity: 0.9;
+  animation: shimmerMove 1400ms ease-in-out infinite;
+}
+
 @keyframes shimmerMove {
   to {
     transform: translateX(100%);

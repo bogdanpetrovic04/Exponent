@@ -26,6 +26,8 @@ export default function RoomPage() {
   }, [refresh])
   const [userId, setUserId] = useState<string | null>(null)
   const [prompt, setPrompt] = useState<string | null>(null)
+  const [questionImage, setQuestionImage] = useState<{ imageUrl: string; sourceUrl: string } | null>(null)
+  const [questionImageLoading, setQuestionImageLoading] = useState(false)
   const [guessInput, setGuessInput] = useState('')
   const [actionError, setActionError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -53,6 +55,8 @@ export default function RoomPage() {
   useEffect(() => {
     if (!supabase || !room || room.phase !== 'question') {
       setPrompt(null)
+      setQuestionImage(null)
+      setQuestionImageLoading(false)
       return
     }
     void supabase.rpc('get_question_prompt', { p_room_id: room.id }).then(({ data, error: err }) => {
@@ -60,6 +64,42 @@ export default function RoomPage() {
     })
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only refetch prompt when question identity changes
   }, [room?.id, room?.phase, room?.current_question_id])
+
+  const questionId = room?.current_question_id ?? null
+  const phase = room?.phase ?? null
+  useEffect(() => {
+    if (!supabase || phase !== 'question' || !questionId) return
+    const p = (prompt ?? '').trim()
+    if (!p) return
+
+    setQuestionImageLoading(true)
+    setQuestionImage(null)
+
+    void (async () => {
+      try {
+        const { data: sess } = await supabase.auth.getSession()
+        const token = sess.session?.access_token
+        if (!token) return
+
+        const r = await fetch('/api/question-image', {
+          method: 'POST',
+          headers: {
+            authorization: `Bearer ${token}`,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({ questionId, prompt: p }),
+        })
+        const raw: unknown = await r.json().catch(() => null)
+        const j = raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Record<string, unknown>) : null
+        if (!r.ok || !j || j.ok !== true) return
+        const imageUrl = typeof j.imageUrl === 'string' ? j.imageUrl : null
+        const sourceUrl = typeof j.sourceUrl === 'string' ? j.sourceUrl : null
+        if (imageUrl && sourceUrl) setQuestionImage({ imageUrl, sourceUrl })
+      } finally {
+        setQuestionImageLoading(false)
+      }
+    })()
+  }, [prompt, phase, questionId])
 
   const isHost = userId && room && userId === room.host_id
   const me = players.find((p) => p.user_id === userId && !p.kicked_at)
@@ -244,7 +284,25 @@ export default function RoomPage() {
             Round {room.current_round} / {room.rounds_total}
           </p>
           {prompt ? (
-            <h2 style={{ margin: '0 0 12px', fontSize: '22px' }}>{prompt}</h2>
+            <>
+              <h2 style={{ margin: '0 0 12px', fontSize: '22px' }}>{prompt}</h2>
+              {questionImageLoading ? <div className="question-media question-media-skeleton" /> : null}
+              {questionImage ? (
+                <div className="question-media" aria-label="Question image">
+                  <img src={questionImage.imageUrl} alt="" loading="lazy" decoding="async" />
+                  <a
+                    className="question-media-info"
+                    href={questionImage.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Image source"
+                    title="Image source"
+                  >
+                    ⓘ
+                  </a>
+                </div>
+              ) : null}
+            </>
           ) : (
             <div className="shimmer" style={{ height: 54, marginBottom: 12 }} aria-label="Loading prompt" />
           )}
