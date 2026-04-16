@@ -2,13 +2,14 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../supabaseClient'
 import { useRoomState } from '../hooks/useRoomState'
-import type { GameTimeMode, RoomPlayerRow, RoomRow, RoundGuessRow, RoundScoreRow } from '../types/game'
+import type { GameTimeMode, RoomPlayerRow, RoomRow, RoundGuessRow, RoundScoreRow, TopicMode, TopicRow } from '../types/game'
 import './game.css'
 
 export default function RoomPage() {
   const { roomId } = useParams<{ roomId: string }>()
   const navigate = useNavigate()
-  const { room, players, scores, guesses, loading, error, tickError } = useRoomState(roomId)
+  const { room, players, scores, guesses, topics, loading, error, tickError, refreshTopics } =
+    useRoomState(roomId)
   const [userId, setUserId] = useState<string | null>(null)
   const [prompt, setPrompt] = useState<string | null>(null)
   const [guessInput, setGuessInput] = useState('')
@@ -69,6 +70,42 @@ export default function RoomPage() {
     } catch (e) {
       setActionError(e instanceof Error ? e.message : 'Request failed')
       return false
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function generateAiTopic(description: string): Promise<{ topicId: string; displayName: string } | null> {
+    if (!supabase) return null
+    setBusy(true)
+    setActionError(null)
+    try {
+      const { data: sess } = await supabase.auth.getSession()
+      const token = sess.session?.access_token
+      if (!token) throw new Error('Not signed in')
+
+      const r = await fetch('/api/generate-topic', {
+        method: 'POST',
+        headers: {
+          authorization: `Bearer ${token}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ description }),
+      })
+      const raw: unknown = await r.json()
+      const j = raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Record<string, unknown>) : null
+      if (!r.ok || !j || j.ok !== true) {
+        const err = typeof j?.error === 'string' ? j.error : 'AI generation failed'
+        throw new Error(err)
+      }
+      if (typeof j.topicId !== 'string' || typeof j.displayName !== 'string') {
+        throw new Error('Invalid AI response')
+      }
+      await refreshTopics()
+      return { topicId: j.topicId, displayName: j.displayName }
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : 'AI generation failed')
+      return null
     } finally {
       setBusy(false)
     }
@@ -139,19 +176,23 @@ export default function RoomPage() {
 
       {room.phase === 'lobby' && (
         <LobbyPhase
-          key={`${room.time_mode}-${room.rounds_total}-${room.updated_at}`}
+          key={`${room.time_mode}-${room.rounds_total}-${room.topic_mode}-${room.topic_id}-${room.updated_at}`}
           room={room}
           players={players}
+          topics={topics}
           isHost={!!isHost}
           userId={userId!}
           busy={busy}
-          onUpdateSettings={(tm, r) =>
+          onUpdateSettings={(tm, r, topicMode, topicId) =>
             void callRpc('update_room_settings', {
               p_room_id: room.id,
               p_time_mode: tm,
               p_rounds: r,
+              p_topic_mode: topicMode,
+              p_topic_id: topicId,
             })
           }
+          onGenerateAiTopic={(desc) => generateAiTopic(desc)}
           onKick={(uid) => void callRpc('kick_player', { p_room_id: room.id, p_target: uid })}
           onDelete={async () => {
             if (!window.confirm('Delete this room for everyone?')) return
@@ -228,28 +269,37 @@ export default function RoomPage() {
 function LobbyPhase({
   room,
   players,
+  topics,
   isHost,
   userId,
   busy,
   onUpdateSettings,
+  onGenerateAiTopic,
   onKick,
   onDelete,
   onStart,
 }: {
   room: RoomRow
   players: RoomPlayerRow[]
+  topics: TopicRow[]
   isHost: boolean
   userId: string
   busy: boolean
-  onUpdateSettings: (tm: GameTimeMode, rounds: number) => void
+  onUpdateSettings: (tm: GameTimeMode, rounds: number, topicMode: TopicMode, topicId: string) => void
+  onGenerateAiTopic: (description: string) => Promise<{ topicId: string; displayName: string } | null>
   onKick: (uid: string) => void
   onDelete: () => void
   onStart: () => void
 }) {
   const [tm, setTm] = useState<GameTimeMode>(room.time_mode)
   const [rounds, setRounds] = useState(room.rounds_total)
+  const [topicMode, setTopicMode] = useState<TopicMode>(room.topic_mode)
+  const [topicId, setTopicId] = useState(room.topic_id)
+  const [aiDescription, setAiDescription] = useState('')
+  const [aiBusy, setAiBusy] = useState(false)
 
   const active = players.filter((p) => !p.kicked_at)
+  const topicLabel = (t: TopicRow) => `${t.name} - ${t.short_description}`
 
   return (
     <>
@@ -288,12 +338,95 @@ function LobbyPhase({
               onChange={(e) => setRounds(Number(e.target.value))}
               style={{ width: '100%' }}
             />
+
+            <label style={{ display: 'block', marginTop: 16, marginBottom: 8 }}>Topic</label>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <label>
+                <input
+                  type="radio"
+                  name="topicMode"
+                  checked={topicMode === 'preset'}
+                  onChange={() => setTopicMode('preset')}
+                />{' '}
+                Preset
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  name="topicMode"
+                  checked={topicMode === 'random'}
+                  onChange={() => setTopicMode('random')}
+                />{' '}
+                Random
+              </label>
+              <label>
+                <input
+                  type="radio"
+                  name="topicMode"
+                  checked={topicMode === 'ai_custom'}
+                  onChange={() => setTopicMode('ai_custom')}
+                />{' '}
+                Custom AI
+              </label>
+            </div>
+
+            {topicMode === 'preset' ? (
+              <select
+                className="game-input"
+                style={{ marginTop: 12 }}
+                value={topicId}
+                onChange={(e) => setTopicId(e.target.value)}
+              >
+                {topics.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {topicLabel(t)}
+                  </option>
+                ))}
+              </select>
+            ) : null}
+
+            {topicMode === 'ai_custom' ? (
+              <div style={{ marginTop: 12 }}>
+                <textarea
+                  className="game-input"
+                  value={aiDescription}
+                  onChange={(e) => setAiDescription(e.target.value)}
+                  placeholder="Describe the topic you want (e.g. “European football stats, 1990–2020”)."
+                  rows={3}
+                  style={{ resize: 'vertical' }}
+                />
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  style={{ marginTop: 12, width: '100%' }}
+                  disabled={busy || aiBusy || aiDescription.trim() === ''}
+                  onClick={() => {
+                    void (async () => {
+                      setAiBusy(true)
+                      try {
+                        const res = await onGenerateAiTopic(aiDescription.trim())
+                        if (!res) return
+                        setTopicMode('ai_custom')
+                        setTopicId(res.topicId)
+                        onUpdateSettings(tm, rounds, 'ai_custom', res.topicId)
+                        setAiDescription('')
+                      } finally {
+                        setAiBusy(false)
+                      }
+                    })()
+                  }}
+                >
+                  {aiBusy ? 'Generating…' : 'Generate questions'}
+                </button>
+              </div>
+            ) : null}
+
             <button
               type="button"
               className="btn-ghost"
               style={{ marginTop: 12 }}
               disabled={busy}
-              onClick={() => onUpdateSettings(tm, rounds)}
+              onClick={() => onUpdateSettings(tm, rounds, topicMode, topicId)}
             >
               Save settings
             </button>

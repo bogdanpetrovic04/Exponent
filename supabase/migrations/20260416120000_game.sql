@@ -90,9 +90,16 @@ drop trigger if exists rooms_updated_at on public.rooms;
 create trigger rooms_updated_at before update on public.rooms
 for each row execute function public.set_updated_at();
 
--- Helpers
+-- Helpers (SECURITY DEFINER + row_security off: RLS policies call these; a plain SELECT on
+-- room_players would re-enter room_players policies and hit "stack depth limit exceeded".)
 create or replace function public._is_room_member(p_room_id uuid, p_uid uuid)
-returns boolean language sql stable as $$
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+set row_security = off
+as $$
   select exists (
     select 1 from public.room_players rp
     where rp.room_id = p_room_id and rp.user_id = p_uid and rp.kicked_at is null
@@ -100,12 +107,21 @@ returns boolean language sql stable as $$
 $$;
 
 create or replace function public._is_host(p_room_id uuid, p_uid uuid)
-returns boolean language sql stable as $$
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+set row_security = off
+as $$
   select exists (
     select 1 from public.rooms r
     where r.id = p_room_id and r.host_id = p_uid and r.deleted_at is null
   );
 $$;
+
+grant execute on function public._is_room_member(uuid, uuid) to authenticated;
+grant execute on function public._is_host(uuid, uuid) to authenticated;
 
 -- Pick random unused question (must bypass questions RLS: policy is deny-all for clients)
 create or replace function public._pick_question(p_room_id uuid)
@@ -560,6 +576,9 @@ alter function public.room_tick(uuid) set row_security to off;
 alter function public._score_round(uuid, int) set row_security to off;
 alter function public._enter_reveal(uuid) set row_security to off;
 alter function public._start_question(uuid) set row_security to off;
+
+alter function public._is_room_member(uuid, uuid) set row_security to off;
+alter function public._is_host(uuid, uuid) set row_security to off;
 
 -- Seed sample questions (idempotent-ish: only if empty)
 insert into public.questions (prompt, answer)

@@ -14,7 +14,13 @@ npm run dev
 
 1. Create a Supabase project.
 
-2. In **SQL Editor**, run [`supabase/migrations/20260416120000_game.sql`](supabase/migrations/20260416120000_game.sql) (includes RLS-safe RPC settings and a `SECURITY DEFINER` `_pick_question`).
+2. In **SQL Editor**, run these migrations in order:
+
+   - [`supabase/migrations/20260416120000_game.sql`](supabase/migrations/20260416120000_game.sql)
+   - [`supabase/migrations/20260416180000_room_tick_phase_and_helpers.sql`](supabase/migrations/20260416180000_room_tick_phase_and_helpers.sql)
+   - [`supabase/migrations/20260416200000_early_reveal_scoring.sql`](supabase/migrations/20260416200000_early_reveal_scoring.sql)
+   - [`supabase/migrations/20260416210000_topics.sql`](supabase/migrations/20260416210000_topics.sql)
+   - [`supabase/migrations/20260416211000_topics_rpcs.sql`](supabase/migrations/20260416211000_topics_rpcs.sql)
 
    If you deployed an **older** version of this file before those fixes, re-run **only** the block at the bottom of the current file from `-- RLS: RPCs run as invoker` through the last `alter function ... set row_security to off;`, or run the whole file again (use `create or replace` / `drop policy if exists` where applicable).
 
@@ -34,6 +40,14 @@ VITE_SUPABASE_ANON_KEY="<anon key>"
 ```
 
 For production (e.g. Vercel), set the same `VITE_*` variables and redeploy.
+
+If you want **Custom AI topics**, also set:
+
+```bash
+GEMINI_API_KEY="<your gemini api key>"
+```
+
+See [`web/.env.example`](web/.env.example).
 
 The app talks to Supabase **directly** from the browser (authenticated user JWT). You do **not** need a service role key in the frontend.
 
@@ -61,10 +75,24 @@ Optional: [`web/api/health.ts`](web/api/health.ts) remains as a simple Vercel he
 
 1. Sign in with Google.
 2. Set a **nickname**, then **Host room** or **Join** with a 6-letter code.
-3. Host configures **timer mode** and **rounds**, then **Start game**.
+3. Host configures **topic** (preset/random/custom AI), **timer mode** and **rounds**, then **Start game**.
 4. Each round: read the **question**, enter a **numeric guess** before time runs out.
-5. **Results** show the correct answer, guesses, and **points** \(higher is better: \(1 / (1 + \text{relative error})\)\). Everyone taps **I'm ready** (or wait **10s**) to continue.
-6. After the last round, see **Final scores**. Host taps **Back to lobby** to reset the room for another game.
+5. **Results** show the correct answer, guesses, and **score** (lower is better: exact answer = 0; no guess = 1). Everyone taps **I'm ready** (or wait **10s**) to continue.
+6. After the last round, see **Final standings** (lowest total score wins). Host taps **Back to lobby** to reset the room for another game.
+
+## AI topic generation format
+
+The serverless endpoint [`web/api/generate-topic.ts`](web/api/generate-topic.ts) asks Gemini to return JSON shaped like:
+
+```json
+{
+  "topicName": "Astronomy",
+  "shortDescription": "Distances and magnitudes",
+  "questions": [
+    { "prompt": "How many kilometers are in 1 AU (approx)?", "answer": 149600000 }
+  ]
+}
+```
 
 ## Adding questions
 

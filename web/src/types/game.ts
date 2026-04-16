@@ -1,5 +1,15 @@
 export type GamePhase = 'lobby' | 'question' | 'reveal' | 'final'
 export type GameTimeMode = 'total_30' | 'after_first_30'
+export type TopicMode = 'preset' | 'random' | 'ai_custom'
+
+export type TopicRow = {
+  id: string
+  name: string
+  short_description: string
+  source: 'preset' | 'ai'
+  created_by: string | null
+  created_at: string
+}
 
 export type RoomRow = {
   id: string
@@ -7,6 +17,8 @@ export type RoomRow = {
   host_id: string
   phase: GamePhase
   time_mode: GameTimeMode
+  topic_mode: TopicMode
+  topic_id: string
   rounds_total: number
   current_round: number
   current_question_id: string | null

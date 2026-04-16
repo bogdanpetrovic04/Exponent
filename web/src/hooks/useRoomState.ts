@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
-import type { GamePhase, RoomPlayerRow, RoomRow, RoundGuessRow, RoundScoreRow } from '../types/game'
+import type { GamePhase, RoomPlayerRow, RoomRow, RoundGuessRow, RoundScoreRow, TopicRow } from '../types/game'
 
 const PHASES: readonly GamePhase[] = ['lobby', 'question', 'reveal', 'final']
 
@@ -13,6 +13,7 @@ export function useRoomState(roomId: string | undefined) {
   const [players, setPlayers] = useState<RoomPlayerRow[]>([])
   const [scores, setScores] = useState<RoundScoreRow[]>([])
   const [guesses, setGuesses] = useState<RoundGuessRow[]>([])
+  const [topics, setTopics] = useState<TopicRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [tickError, setTickError] = useState<string | null>(null)
@@ -65,6 +66,12 @@ export function useRoomState(roomId: string | undefined) {
     setLoading(false)
   }, [roomId])
 
+  const refreshTopics = useCallback(async () => {
+    if (!supabase) return
+    const { data } = await supabase.from('topics').select('*').order('name', { ascending: true })
+    setTopics((data ?? []) as TopicRow[])
+  }, [])
+
   useEffect(() => {
     const sb = supabase
     if (!roomId || !sb) {
@@ -73,6 +80,7 @@ export function useRoomState(roomId: string | undefined) {
     }
     queueMicrotask(() => {
       void refresh()
+      void refreshTopics()
     })
 
     const chRooms = sb
@@ -151,6 +159,7 @@ export function useRoomState(roomId: string | undefined) {
     const onVisible = () => {
       if (document.visibilityState !== 'visible') return
       runTick()
+      void refreshTopics()
     }
     document.addEventListener('visibilitychange', onVisible)
 
@@ -162,7 +171,7 @@ export function useRoomState(roomId: string | undefined) {
       void sb.removeChannel(chGuesses)
       window.clearInterval(tick)
     }
-  }, [roomId, refresh, applyTickPhase])
+  }, [roomId, refresh, refreshTopics, applyTickPhase])
 
   // If the client clock shows the question timer has expired but we still have question phase,
   // poll faster than the main interval (background tabs throttle setInterval heavily).
@@ -199,5 +208,5 @@ export function useRoomState(roomId: string | undefined) {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- room?.phase + guard above is enough
   }, [roomId, refresh, room?.phase])
 
-  return { room, players, scores, guesses, loading, error, tickError, refresh }
+  return { room, players, scores, guesses, topics, loading, error, tickError, refresh, refreshTopics }
 }
