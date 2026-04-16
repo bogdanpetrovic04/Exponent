@@ -3,9 +3,9 @@
   max-width: 760px;
   margin: 0 auto;
   padding:
-    calc(18px + var(--safe-top))
+    18px
     16px
-    calc(36px + var(--safe-bottom));
+    36px;
   text-align: left;
 }
 

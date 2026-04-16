@@ -31,8 +31,8 @@
 
   /* iOS safe-area fallbacks:
      Some iOS contexts report env(safe-area-inset-*) as 0, so we enforce a minimum. */
-  --safe-top: max(24px, env(safe-area-inset-top), constant(safe-area-inset-top));
-  --safe-bottom: max(16px, env(safe-area-inset-bottom), constant(safe-area-inset-bottom));
+  --safe-top: max(12px, env(safe-area-inset-top), constant(safe-area-inset-top));
+  --safe-bottom: max(12px, env(safe-area-inset-bottom), constant(safe-area-inset-bottom));
 
   font: 16px/150% var(--sans);
   letter-spacing: 0.16px;
@@ -106,8 +106,6 @@ body {
   min-height: -webkit-fill-available;
   background: var(--bg);
   overscroll-behavior: none;
-  padding-top: var(--safe-top);
-  padding-bottom: var(--safe-bottom);
   position: relative;
 }
 
@@ -129,9 +127,9 @@ body::before {
 
 /* iOS fallback: ensure gap even if safe-area reports 0 */
 @supports (-webkit-touch-callout: none) {
-  body {
-    padding-top: calc(24px + env(safe-area-inset-top));
-    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  :root {
+    --safe-top: max(12px, env(safe-area-inset-top));
+    --safe-bottom: max(12px, env(safe-area-inset-bottom));
   }
 }
 
