@@ -113,7 +113,7 @@ export default async function handler(req: Req, res: Res) {
     '- questions length: exactly 20.',
     '- prompt: 1-240 chars, answer must be a number (no units).',
     '- imageQuery: 1-120 chars; optimized for Wikipedia/Wikimedia search (specific entity: species, landmark, country, object, person). MUST NOT reveal or hint at the numeric answer (no digits, no quantities, no “how many”, no units). Example: “red panda”, “Eiffel Tower”, “Saturn planet”.',
-    '- imageQueryStock: 1-120 chars; a simpler, broader phrase for stock-style photos if Wikipedia has no good image. Still must not hint the answer (no digits). Example: “red panda wildlife”, “Paris cityscape at dusk”, “outer space nebula”.',
+    '- imageQueryStock: 1-120 chars; for stock-style photos when Wikipedia is weak. Use GENERIC visual props, settings, or equipment — NOT another specific person or “close” celebrity/athlete. Never substitute a different boxer, fighter, or named individual. Prefer objects and places: e.g. boxing → “boxing gloves on canvas”, “empty boxing ring”, “punching bag gym”; animals → “lion silhouette savanna”, “ocean waves sunset”; space → “night sky stars milky way”. MUST NOT hint the numeric answer (no digits, no counts, no units).',
     '- Prompts should be diverse and unambiguous.',
     '',
     `User topic request: ${description}`,
