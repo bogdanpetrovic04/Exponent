@@ -213,11 +213,15 @@ export default function RoomPage() {
       )}
 
       {room.phase === 'question' && (
-        <div className="game-card">
+        <div className="game-card panel-enter">
           <p style={{ color: 'var(--text)', marginBottom: 8 }}>
             Round {room.current_round} / {room.rounds_total}
           </p>
-          <h2 style={{ margin: '0 0 12px', fontSize: '22px' }}>{prompt ?? '…'}</h2>
+          {prompt ? (
+            <h2 style={{ margin: '0 0 12px', fontSize: '22px' }}>{prompt}</h2>
+          ) : (
+            <div className="shimmer" style={{ height: 54, marginBottom: 12 }} aria-label="Loading prompt" />
+          )}
           <p className="game-timer">
             {questionSecondsLeft !== null ? `${questionSecondsLeft}s` : 'Timer starts after first guess'}
           </p>
@@ -627,7 +631,7 @@ function RevealPhase({
     .sort((a, b) => a.points - b.points)
 
   return (
-    <div className="game-card">
+    <div className="game-card panel-enter">
       <h2 style={{ marginTop: 0 }}>Results</h2>
       <p style={{ color: 'var(--text)' }}>
         Answer: <strong>{room.reveal_answer ?? '—'}</strong>
@@ -638,22 +642,22 @@ function RevealPhase({
       <p style={{ color: 'var(--text)', fontSize: '14px', marginBottom: 8 }}>
         Score: 0 = exact answer; no guess = 1; lower is better.
       </p>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '15px' }}>
+      <table className="game-table">
         <thead>
           <tr>
-            <th style={{ textAlign: 'left', padding: '6px 0' }}>#</th>
-            <th style={{ textAlign: 'left' }}>Player</th>
-            <th style={{ textAlign: 'right' }}>Guess</th>
-            <th style={{ textAlign: 'right' }}>Score</th>
+            <th>#</th>
+            <th>Player</th>
+            <th>Guess</th>
+            <th>Score</th>
           </tr>
         </thead>
         <tbody>
           {roundScores.map((s, i) => (
             <tr key={s.user_id}>
-              <td style={{ padding: '6px 0' }}>{i + 1}</td>
-              <td>{nick(s.user_id)}</td>
-              <td style={{ textAlign: 'right' }}>{guessOf(s.user_id) ?? '—'}</td>
-              <td style={{ textAlign: 'right' }}>{s.points.toFixed(4)}</td>
+              <td data-label="#">{i + 1}</td>
+              <td data-label="Player">{nick(s.user_id)}</td>
+              <td data-label="Guess">{guessOf(s.user_id) ?? '—'}</td>
+              <td data-label="Score">{s.points.toFixed(4)}</td>
             </tr>
           ))}
         </tbody>
@@ -692,7 +696,7 @@ function FinalPhase({
   const rows = [...totals.entries()].sort((a, b) => a[1] - b[1])
 
   return (
-    <div className="game-card">
+    <div className="game-card panel-enter">
       <h2 style={{ marginTop: 0 }}>Final standings</h2>
       <p style={{ color: 'var(--text)', fontSize: '14px', marginBottom: 12 }}>
         Total score (sum of per-round scores); lower is better. No guess in a round counts as 1.
