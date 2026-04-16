@@ -71,3 +71,27 @@
   font-size: 20px;
   color: var(--accent);
 }
+
+@media (max-width: 480px) {
+  .game-layout {
+    padding: 16px 14px 28px;
+  }
+
+  .game-card {
+    padding: 14px;
+    border-radius: 10px;
+  }
+
+  .game-code {
+    font-size: 22px;
+    letter-spacing: 0.16em;
+  }
+
+  .game-timer {
+    font-size: 18px;
+  }
+
+  .btn-ghost {
+    padding: 8px 10px;
+  }
+}

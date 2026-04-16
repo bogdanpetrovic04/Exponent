@@ -66,6 +66,13 @@ body {
   margin: 0;
 }
 
+@media (max-width: 640px) {
+  #root {
+    width: 100%;
+    border-inline: none;
+  }
+}
+
 h1,
 h2 {
   font-family: var(--heading);
