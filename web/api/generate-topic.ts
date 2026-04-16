@@ -52,6 +52,10 @@ function extractGeminiText(raw: unknown): string {
     .join('')
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 export default async function handler(req: Req, res: Res) {
   if (req.method !== 'POST') return json(res, 405, { ok: false, error: 'method_not_allowed' })
 
@@ -105,21 +109,43 @@ export default async function handler(req: Req, res: Res) {
 
   let modelText = ''
   try {
-    const r = await fetch(url, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.6 },
-      }),
+    const payload = JSON.stringify({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.6 },
     })
-    const raw: unknown = await r.json()
-    if (!r.ok) {
-      const err = asRecord(raw)?.error
-      const msg = typeof asRecord(err)?.message === 'string' ? asRecord(err)?.message : null
-      return json(res, 502, { ok: false, error: 'gemini_error', details: msg })
+
+    const callGemini = async (): Promise<{ ok: true; text: string } | { ok: false; status: number; message: string | null }> => {
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: payload,
+      })
+      const raw: unknown = await r.json().catch(() => null)
+      if (!r.ok) {
+        const err = asRecord(raw)?.error
+        const msg = typeof asRecord(err)?.message === 'string' ? asRecord(err)?.message : null
+        return { ok: false, status: r.status, message: msg }
+      }
+      const text = extractGeminiText(raw)
+      return { ok: true, text }
     }
-    modelText = extractGeminiText(raw)
+
+    let out = await callGemini()
+    if (!out.ok && out.status === 429) {
+      // Best-effort backoff; Vercel functions can see occasional bursts / shared quota.
+      await sleep(1500)
+      out = await callGemini()
+    }
+
+    if (!out.ok) {
+      return json(res, out.status === 429 ? 429 : 502, {
+        ok: false,
+        error: out.status === 429 ? 'gemini_rate_limited' : 'gemini_error',
+        details: out.message,
+      })
+    }
+
+    modelText = out.text
     if (!modelText) throw new Error('Empty model output')
   } catch (e) {
     return json(res, 502, { ok: false, error: 'gemini_request_failed', details: e instanceof Error ? e.message : null })

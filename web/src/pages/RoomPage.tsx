@@ -96,7 +96,8 @@ export default function RoomPage() {
       const j = raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Record<string, unknown>) : null
       if (!r.ok || !j || j.ok !== true) {
         const err = typeof j?.error === 'string' ? j.error : 'AI generation failed'
-        throw new Error(err)
+        const details = typeof j?.details === 'string' ? j.details : null
+        throw new Error(details ? `${err} — ${details}` : err)
       }
       if (typeof j.topicId !== 'string' || typeof j.displayName !== 'string') {
         throw new Error('Invalid AI response')
