@@ -83,28 +83,38 @@ button {
   min-height: 100vh;
   min-height: 100svh;
   min-height: 100dvh;
-  height: 100dvh;
   display: flex;
   flex-direction: column;
   padding-top: var(--safe-top);
   padding-bottom: var(--safe-bottom);
-  background:
-    radial-gradient(1100px 700px at 18% 8%, rgba(34, 211, 238, 0.10), transparent 58%),
-    radial-gradient(1100px 700px at 82% 0%, rgba(56, 189, 248, 0.06), transparent 55%),
-    radial-gradient(900px 650px at 50% 100%, rgba(34, 211, 238, 0.05), transparent 60%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 32%),
-    var(--bg);
+  background: transparent;
 }
 
 body {
   margin: 0;
   width: 100%;
   overflow-x: hidden;
-  background: var(--bg);
+  min-height: 100vh;
+  min-height: 100svh;
+  min-height: 100dvh;
+  min-height: -webkit-fill-available;
+  background:
+    radial-gradient(1100px 700px at 18% 8%, rgba(34, 211, 238, 0.10), transparent 58%),
+    radial-gradient(1100px 700px at 82% 0%, rgba(56, 189, 248, 0.06), transparent 55%),
+    radial-gradient(900px 650px at 50% 100%, rgba(34, 211, 238, 0.05), transparent 60%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.03), transparent 32%),
+    var(--bg);
   overscroll-behavior: none;
-  min-height: 100%;
   padding-top: var(--safe-top);
   padding-bottom: var(--safe-bottom);
+}
+
+/* iOS fallback: ensure gap even if safe-area reports 0 */
+@supports (-webkit-touch-callout: none) {
+  body {
+    padding-top: calc(24px + env(safe-area-inset-top));
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  }
 }
 
 @media (max-width: 640px) {
