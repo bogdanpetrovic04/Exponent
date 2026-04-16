@@ -37,6 +37,13 @@ export default function RoomPage() {
   }, [])
 
   useEffect(() => {
+    // Phase changes happen on the same route; reset scroll for "new screens".
+    window.scrollTo(0, 0)
+    document.documentElement.scrollTop = 0
+    document.body.scrollTop = 0
+  }, [room?.phase])
+
+  useEffect(() => {
     if (!supabase) return
     void supabase.auth.getSession().then(({ data: { session } }) => {
       setUserId(session?.user.id ?? null)
