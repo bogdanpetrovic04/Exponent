@@ -496,20 +496,23 @@ function LobbyPhase({
               >
                 {topics.map((t) => (
                   <option key={t.id} value={t.id}>
-                    {topicLabel(t)}
+                    {topicLabel(t)} ({t.id.slice(0, 6)})
                   </option>
                 ))}
               </select>
             ) : null}
 
             <p style={{ color: 'var(--text)', marginTop: 10, fontSize: '13px' }}>
-              {saving ? 'Saving…' : 'Saved'} · room topic: <code>{room.topic_id.slice(0, 8)}</code> · selected:{' '}
+              {saving ? 'Saving…' : 'Saved'} · phase: <code>{room.phase}</code> · updated:{' '}
+              <code>{new Date(room.updated_at).toLocaleTimeString()}</code>
+              <br />
+              topics: <code>{topics.length}</code> · room topic: <code>{room.topic_id.slice(0, 8)}</code> · selected:{' '}
               <code>{topicId.slice(0, 8)}</code>
             </p>
 
             {selectedTopic ? (
               <p style={{ color: 'var(--text)', marginTop: 10, fontSize: '14px' }}>
-                Selected: <strong>{topicLabel(selectedTopic)}</strong>
+                Selected: <strong>{topicLabel(selectedTopic)}</strong> <span style={{ opacity: 0.7 }}>({selectedTopic.id.slice(0, 8)})</span>
               </p>
             ) : null}
 
