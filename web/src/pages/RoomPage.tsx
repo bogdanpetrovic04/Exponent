@@ -499,7 +499,7 @@ function LobbyPhase({
               >
                 {topics.map((t) => (
                   <option key={t.id} value={t.id}>
-                    {topicLabel(t)} ({t.id.slice(0, 6)})
+                    {topicLabel(t)}
                   </option>
                 ))}
               </select>
